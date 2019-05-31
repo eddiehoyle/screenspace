@@ -8,15 +8,15 @@ namespace screenspace {
 class PickerDrawOverride : public MPxDrawOverride
 {
 public:
-  MString PickerDrawOverride::classifcation = "drawdb/picker";
-  MString PickerDrawOverride::id = "picker";
-  static MPxDrawOverride* Creator(const MObject& obj);
+  static MString classifcation;
+  static MString id;
+  static MPxDrawOverride* creator(const MObject& obj);
 
 public:
 
   PickerDrawOverride() = default;
   ~PickerDrawOverride() override = default;
-  DrawAPI supportedDrawAPIs() const override;
+//  DrawAPI supportedDrawAPIs() const override;
 
   bool isBounded(const MDagPath& objPath,
                  const MDagPath& cameraPath) const override;

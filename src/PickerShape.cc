@@ -36,8 +36,8 @@ bool PickerShape::isBounded() const {
 
 MBoundingBox PickerShape::boundingBox() const {
   MBoundingBox bbox;
-  bbox.expand(MPoint(-1.0f, -1.0f, -1.0f))
-  bbox.expand(MPoint( 1.0f,  1.0f,  1.0f))
+  bbox.expand(MPoint(-1.0f, -1.0f, -1.0f));
+  bbox.expand(MPoint( 1.0f,  1.0f,  1.0f));
   return bbox;
 }
 

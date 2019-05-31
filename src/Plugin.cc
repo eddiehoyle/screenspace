@@ -5,6 +5,7 @@
 
 #include <maya/MGlobal.h>
 #include <maya/MFnPlugin.h>
+#include <maya/MDrawRegistry.h>
 
 using namespace screenspace;
 
@@ -14,25 +15,19 @@ MStatus initializePlugin(MObject obj) {
 
   MStatus status;
 
-  status = plugin.registerNode(
-      "uiDrawManager",
-      uiDrawManager::id,
-      &uiDrawManager::creator,
-      &uiDrawManager::initialize,
-      MPxNode::kLocatorNode,
-      &uiDrawManager::drawDbClassification);
-  if (!status) {
-    status.perror("registerNode");
-    return status;
-  }
+  status = plugin.registerNode(PickerShape::typeName,
+                               PickerShape::id,
+                               &PickerShape::creator,
+                               & PickerShape::initialize,
+                               MPxNode::kDependNode,
+                               &PickerDrawOverride::classifcation);
+  CHECK_MSTATUS(status);
+
   status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-      uiDrawManager::drawDbClassification,
-      uiDrawManager::drawRegistrantId,
-      uiDrawManagerDrawOverride::Creator);
-  if (!status) {
-    status.perror("registerDrawOverrideCreator");
-    return status;
-  }
+      PickerDrawOverride::classifcation,
+      PickerDrawOverride::id,
+      PickerDrawOverride::creator);
+  CHECK_MSTATUS(status);
   return status;
 }
 

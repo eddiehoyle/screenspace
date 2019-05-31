@@ -1,9 +1,5 @@
 #include "PickerDrawOverride.hh"
-#include "PartMesh.hh"
-#include "PickerShape.hh"
-#include "PartGeometryData.hh"
-
-#include <ldraw/Log.hh>
+#include "Log.hh"
 
 #include <maya/MBoundingBox.h>
 #include <maya/MUserData.h>
@@ -31,5 +27,44 @@ namespace screenspace {
 
 MString PickerDrawOverride::classifcation = "drawdb/picker";
 MString PickerDrawOverride::id = "picker";
+
+
+MPxDrawOverride* PickerDrawOverride::creator(const MObject& obj)
+{
+  return new PickerDrawOverride(obj);
+}
+
+bool PickerDrawOverride::isBounded(const MDagPath& objPath,
+                                   const MDagPath& cameraPath) const {
+  return true;
+}
+
+MBoundingBox PickerDrawOverride::boundingBox(const MDagPath& objPath,
+                                             const MDagPath& cameraPath) const {
+  MBoundingBox bbox;
+  bbox.expand(MPoint(-1.0f, -1.0f, -1.0f));
+  bbox.expand(MPoint( 1.0f,  1.0f,  1.0f));
+  return bbox;
+}
+
+MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
+                                              const MDagPath& cameraPath,
+                                              const MFrameContext& frameContext,
+                                              MUserData* oldData) {
+  TNC_DEBUG << "drawing";
+  return nullptr;
+}
+
+void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
+                                        MHWRender::MUIDrawManager& drawManager,
+                                        const MHWRender::MFrameContext& frameContext,
+                                        const MUserData* data) {
+  TNC_DEBUG << "ui";
+}
+
+PickerDrawOverride::PickerDrawOverride(const MObject& obj) : MPxDrawOverride(obj, nullptr) {
+
+}
+
 
 }

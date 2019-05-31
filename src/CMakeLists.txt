@@ -1,5 +1,11 @@
 set(SS_LIBRARY screenspace)
 set(SS_SOURCE_FILES
+        PickerDrawOverride.cc
+        PickerDrawOverride.hh
+        PickerShape.cc
+        PickerShape.hh
+        PickerUI.cc
+        PickerUI.hh
         Log.hh
         Log.cc
         Plugin.cc
