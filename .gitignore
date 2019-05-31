@@ -1,0 +1,7 @@
+.idea/
+cmake-build-debug/
+lib/
+bin/
+ldraw/
+tmp/
+src/rdraw/target/
