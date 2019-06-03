@@ -14,15 +14,15 @@ public:
 
 public:
 
-  PickerDrawOverride() = default;
   ~PickerDrawOverride() override = default;
-//  DrawAPI supportedDrawAPIs() const override;
+  MHWRender::DrawAPI supportedDrawAPIs() const override
+  {
+    return (MHWRender::kOpenGLCoreProfile);
+  }
 
-  bool isBounded(const MDagPath& objPath,
-                 const MDagPath& cameraPath) const override;
-
-  MBoundingBox boundingBox(const MDagPath& objPath,
-                           const MDagPath& cameraPath) const override;
+//  bool isBounded(const MDagPath& objPath, const MDagPath& cameraPath) const override { return true; }
+//  MBoundingBox boundingBox(const MDagPath& objPath,
+//                           const MDagPath& cameraPath) const override;
 
   MUserData* prepareForDraw(const MDagPath& objPath,
                             const MDagPath& cameraPath,
@@ -35,6 +35,29 @@ public:
                       MHWRender::MUIDrawManager& drawManager,
                       const MHWRender::MFrameContext& frameContext,
                       const MUserData* data) override;
+
+//  bool wantUserSelection() const override { return true; }
+//
+//  bool userSelect(MSelectionInfo& selectInfo,
+//                  const MHWRender::MDrawContext& context,
+//                  MPoint& hitPoint,
+//                  const MUserData* data) override;
+
+  bool wantUserSelection() const override;
+
+  bool userSelect(MSelectionInfo& selectInfo,
+                  const MHWRender::MDrawContext& context,
+                  MPoint& hitPoint,
+                  const MUserData* data) override;
+
+
+  /// Only triggers when selection is successful
+  bool refineSelectionPath(const MSelectionInfo& selectInfo,
+                                   const MRenderItem& hitItem,
+                                   MDagPath& path,
+                                   MObject& geomComponents,
+                                   MSelectionMask& objectMask) override;
+
 private:
   PickerDrawOverride(const MObject& obj);
 };

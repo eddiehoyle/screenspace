@@ -1,10 +1,10 @@
-#include <maya/MPxSurfaceShape.h>
+#include <maya/MPxLocatorNode.h>
 #include <maya/MPointArray.h>
 #include <maya/MSelectionMask.h>
 
 namespace screenspace {
 
-class PickerShape : public MPxSurfaceShape {
+class PickerShape : public MPxLocatorNode {
 
 public:
   static MTypeId id;
@@ -16,11 +16,10 @@ public:
   PickerShape() = default;
   virtual ~PickerShape() = default;
 
+//  bool isBounded() const override { return true; }
+//  MBoundingBox boundingBox() const override;
+
   void postConstructor() override;
-  bool isBounded() const override;
-  MBoundingBox boundingBox() const override;
-  MSelectionMask getShapeSelectionMask() const override;
-  MSelectionMask getComponentSelectionMask() const override;
 };
 
 }

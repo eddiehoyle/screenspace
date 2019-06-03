@@ -1,4 +1,5 @@
 #include "PickerShape.hh"
+#include "Log.hh"
 
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnStringData.h>
@@ -11,6 +12,7 @@
 #include <maya/MFnMesh.h>
 #include <maya/MFloatPointArray.h>
 #include <maya/MFnMeshData.h>
+#include <maya/MBoundingBox.h>
 
 namespace screenspace {
 
@@ -18,35 +20,26 @@ MString PickerShape::typeName = "picker";
 MTypeId PickerShape::id(0x8701F);
 
 void* PickerShape::creator() {
+  TNC_DEBUG << "Creating picker...";
   return new PickerShape();
 }
 
 MStatus PickerShape::initialize() {
+  TNC_DEBUG << "Initializing picker...";
   MStatus status;
   return MStatus::kSuccess;
 }
 
+//MBoundingBox PickerShape::boundingBox() const {
+//  MBoundingBox bbox;
+//  double min = std::numeric_limits<double>::min();
+//  double max = std::numeric_limits<double>::max();
+//  bbox.expand(MPoint(min, min, min));
+//  bbox.expand(MPoint(max, max, max));
+//  return bbox;
+//}
+
 void PickerShape::postConstructor() {
-  setRenderable(false);
-}
-
-bool PickerShape::isBounded() const {
-  return true;
-}
-
-MBoundingBox PickerShape::boundingBox() const {
-  MBoundingBox bbox;
-  bbox.expand(MPoint(-1.0f, -1.0f, -1.0f));
-  bbox.expand(MPoint( 1.0f,  1.0f,  1.0f));
-  return bbox;
-}
-
-MSelectionMask PickerShape::getShapeSelectionMask() const {
-  return MSelectionMask(MSelectionMask::kSelectHandles);
-}
-
-MSelectionMask PickerShape::getComponentSelectionMask() const {
-  return MSelectionMask();
 }
 
 }

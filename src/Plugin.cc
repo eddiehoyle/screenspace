@@ -11,16 +11,16 @@ using namespace screenspace;
 
 MStatus initializePlugin(MObject obj) {
   MFnPlugin plugin(obj, "Eddie Hoyle", "1.0", "Any");
-  MGlobal::displayInfo("initializePlugin!");
 
   MStatus status;
 
   status = plugin.registerNode(PickerShape::typeName,
                                PickerShape::id,
                                &PickerShape::creator,
-                               & PickerShape::initialize,
-                               MPxNode::kDependNode,
+                               &PickerShape::initialize,
+                               MPxNode::kLocatorNode,
                                &PickerDrawOverride::classifcation);
+
   CHECK_MSTATUS(status);
 
   status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
@@ -28,12 +28,14 @@ MStatus initializePlugin(MObject obj) {
       PickerDrawOverride::id,
       PickerDrawOverride::creator);
   CHECK_MSTATUS(status);
+
+  TNC_DEBUG << "Start plugin";
   return status;
 }
 
 MStatus uninitializePlugin(MObject obj) {
   MFnPlugin plugin(obj);
-  MGlobal::displayInfo("uninitializePlugin!");
+  TNC_DEBUG << "Finish plugin";
   MStatus status;
   return status;
 }
