@@ -135,8 +135,15 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
 //  MMatrix foo = MMatrix::identity;
 //  MMatrix foo = modelRotateMatrix.inverse() * modelRotateMatrix;
 //  MVector cameraZ(foo(2, 0), foo(2, 1), foo(2, 2));
+  MMatrix inverseModelMatrix = modelXform.asMatrixInverse();
+  MMatrix inverseViewMatrix = viewXform.asMatrixInverse();
 
-  TNC_DEBUG << "modelRotateMatrix=" << modelRotateMatrix;
+  MPoint origin = MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kPostTransform);
+//  MMatrix foo = inverseModelMatrix * modelMatrix;
+  MMatrix foo = inverseViewMatrix * inverseModelMatrix;
+  MVector cameraY(foo(1, 0), foo(1, 1), foo(1, 2));
+
+  TNC_DEBUG << "origin=" << origin;
 //  TNC_DEBUG << "drawPos=" << drawPos << ", cameraPos=" << cameraPos << ", cameraZ=" << cameraZ;
 
 
@@ -147,7 +154,7 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
 
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
   drawManager.setColor(MColor(1.0, 0.0, 0.0, 0.2));
-  drawManager.rect(MPoint(0,0,0), MVector(0, 1, 0), MVector(0, 0, 1), 10, 10, true);
+  drawManager.rect(origin, MVector(0, 0, 1), cameraY, 10, 10, true);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
   drawManager.setColor(MColor(0.0, 1.0, 0.0));
   drawManager.circle2d(MPoint(data->m_width/2/2, data->m_height/2/2), 20, true);
