@@ -8,6 +8,6 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/lib)
 #set(OpenGL_GL_PREFERENCE GLVND)
 
 find_package(Maya REQUIRED)
-find_package(OpenGL REQUIRED)
+#find_package(OpenGL REQUIRED)
 
 add_subdirectory(src)

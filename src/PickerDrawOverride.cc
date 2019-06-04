@@ -78,6 +78,32 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
   return data;
 }
 
+void lookAt(const MVector& from, const MVector& to, MMatrix &V)
+{
+  static const MVector tmp(0, 1, 0);
+  MVector forward = (from - to);
+  forward.normalize();
+  MVector right = tmp ^ forward;
+  MVector up = forward ^ right;
+//  Vec3f forward = normalize(from - to);
+//  Vec3f right = crossProduct(normalize(tmp), forward);
+//  Vec3f up = crossProduct(forward, right);
+
+  V(0, 0) = right.x;
+  V(0, 1) = right.y;
+  V(0, 2) = right.z;
+  V(1, 0) = up.x;
+  V(1, 1) = up.y;
+  V(1, 2) = up.z;
+  V(2, 0) = forward.x;
+  V(2, 1) = forward.y;
+  V(2, 2) = forward.z;
+
+  V(3, 0) = from.x;
+  V(3, 1) = from.y;
+  V(3, 2) = from.z;
+}
+
 void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
                                         MHWRender::MUIDrawManager& drawManager,
                                         const MHWRender::MFrameContext& frameContext,
@@ -86,29 +112,46 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   if (!data)
     return;
 
+  MDagPath shape = frameContext.getCurrentCameraPath();
+  if (shape.partialPathName() != "perspShape")
+    return;
+
+  MDagPath view;
+  MDagPath model;
+
+  MDagPath::getAPathTo(MFnDagNode(objPath).parent(0), model);
+  MDagPath::getAPathTo(MFnDagNode(frameContext.getCurrentCameraPath()).parent(0), view);
+
+  MMatrix viewMatrix = MFnTransform(view).transformationMatrix();
+  MMatrix modelMatrix = MFnTransform(model).transformationMatrix();
+
+  MTransformationMatrix modelXform = MTransformationMatrix(modelMatrix);
+  MTransformationMatrix viewXform = MTransformationMatrix(viewMatrix);
+
+  MMatrix modelRotateMatrix = modelXform.asRotateMatrix();
+  MMatrix viewRotateMatrix = viewXform.asRotateMatrix();
+
+//  MMatrix foo = modelRotateMatrix.inverse() * modelRotateMatrix;
+//  MMatrix foo = MMatrix::identity;
+//  MMatrix foo = modelRotateMatrix.inverse() * modelRotateMatrix;
+//  MVector cameraZ(foo(2, 0), foo(2, 1), foo(2, 2));
+
+  TNC_DEBUG << "modelRotateMatrix=" << modelRotateMatrix;
+//  TNC_DEBUG << "drawPos=" << drawPos << ", cameraPos=" << cameraPos << ", cameraZ=" << cameraZ;
+
+
+//  MPoint worldNearPt, worldFarPt;
+//  frameContext.viewportToWorld(0, 0, worldNearPt, worldFarPt);
+//  worldNearPt = (worldFarPt - worldNearPt) * 0.01 + worldNearPt;
+
+
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
-  drawManager.setColor(MColor(1.0, 0.0, 0.0));
+  drawManager.setColor(MColor(1.0, 0.0, 0.0, 0.2));
+  drawManager.rect(MPoint(0,0,0), MVector(0, 1, 0), MVector(0, 0, 1), 10, 10, true);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
-//  drawManager.circle(MPoint(0,0,0), MVector(0, 1, 0), 12222, true);
   drawManager.setColor(MColor(0.0, 1.0, 0.0));
   drawManager.circle2d(MPoint(data->m_width/2/2, data->m_height/2/2), 20, true);
-
-  MMatrix matrix = frameContext.getMatrix(MFrameContext::MatrixType::kWorldViewMtx);
-  MPoint worldNearPt, worldFarPt;
-  frameContext.viewportToWorld(0, 0, worldNearPt, worldFarPt);
-  worldNearPt = (worldFarPt - worldNearPt) * 0.01 + worldNearPt;
-
-  MTransformationMatrix xform(matrix);
-  MVector viewPt = xform.getTranslation(MSpace::Space::kWorld);
-//  double* viewPos = matrix[3];
-//  MPoint viewPt(viewPos[0], viewPos[1], viewPos[2]);
-//  drawManager.setColor(MColor(0.0, 0.0, 1.0));
-//  drawManager.rect(viewPt - worldNearPt, MVector(0, 1, 0), MVector(0, 1, 0), 20, 20, true);
-
-  TNC_DEBUG << "viewPt=" << viewPt;
-
   drawManager.endDrawable();
-
 }
 
 //bool PickerDrawOverride::userSelect(MSelectionInfo& selectInfo,
