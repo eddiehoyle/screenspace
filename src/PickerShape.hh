@@ -20,6 +20,12 @@ public:
 //  MBoundingBox boundingBox() const override;
 
   void postConstructor() override;
+
+private:
+  static MObject m_bl;
+  static MObject m_br;
+  static MObject m_tl;
+  static MObject m_tr;
 };
 
 }
