@@ -17,7 +17,7 @@ public:
   ~PickerDrawOverride() override = default;
   MHWRender::DrawAPI supportedDrawAPIs() const override
   {
-    return (MHWRender::kOpenGLCoreProfile);
+    return (MHWRender::kAllDevices);
   }
 
 //  bool isBounded(const MDagPath& objPath, const MDagPath& cameraPath) const override { return true; }

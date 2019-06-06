@@ -1,4 +1,5 @@
 #include "PickerDrawOverride.hh"
+#include "PickerShape.hh"
 #include "Log.hh"
 
 #include <maya/MBoundingBox.h>
@@ -34,13 +35,17 @@ namespace screenspace {
 MString PickerDrawOverride::classifcation = "drawdb/geometry/screenspace/picker";
 MString PickerDrawOverride::id = "picker";
 
-
 class PickerUserData : public MUserData {
 public:
-  PickerUserData() : MUserData(false), m_width(0), m_height(0) {}
+  PickerUserData() : MUserData(false), m_viewportWidth(-1), m_viewportHeight(-1), m_viewportWidthScalar(0), m_viewportHeightScalar(0) {}
   ~PickerUserData() override = default;
-  int m_width;
-  int m_height;
+  std::pair<int, int> m_viewport;
+  std::pair<double, double> m_scalar;
+
+  int m_viewportWidth;
+  int m_viewportHeight;
+  double m_viewportWidthScalar;
+  double m_viewportHeightScalar;
 };
 
 
@@ -70,12 +75,53 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
   if (!data)
     data = new PickerUserData();
 
-  int originX, originY, width, height;
-  frameContext.getViewportDimensions(originX, originY, width, height);
-//  TNC_DEBUG << "drawing: (" << originX << ", " << originY << ", " << width << ", " << height << ")";
+  int originX, originY;
+  frameContext.getViewportDimensions(originX, originY, data->m_viewportWidth, data->m_viewportHeight);
 
-  data->m_width = width;
-  data->m_height = height;
+  MPoint nearBL, nearBR, nearTL, nearTR;
+  MPoint farBL, farBR, farTL, farTR;
+  frameContext.viewportToWorld(0, 0, nearBL, farBL);
+  frameContext.viewportToWorld(0, data->m_viewportHeight, nearTL, farTL);
+  frameContext.viewportToWorld(data->m_viewportWidth, 0, nearBR, farBR);
+  frameContext.viewportToWorld(data->m_viewportWidth, data->m_viewportHeight, nearTR, farTR);
+
+  MMatrix viewMatrix = frameContext.getMatrix(MFrameContext::MatrixType::kViewMtx);
+  MMatrix viewRotMatrix = MTransformationMatrix(viewMatrix).asRotateMatrix();
+
+  data->m_viewportWidthScalar = (nearBR - nearBL).length();
+  data->m_viewportHeightScalar = (nearTL - nearBL).length();
+
+  MPlug blPlug(objPath.node(), PickerShape::m_bl);
+  MPlug brPlug(objPath.node(), PickerShape::m_br);
+  MPlug tlPlug(objPath.node(), PickerShape::m_tl);
+  MPlug trPlug(objPath.node(), PickerShape::m_tr);
+
+  MPoint bl = ((farBL - nearBL) * 0.01 + nearBL);
+  MPoint br = ((farBR - nearBR) * 0.01 + nearBR);
+  MPoint tl = ((farTL - nearTL) * 0.01 + nearTL);
+  MPoint tr = ((farTR - nearTR) * 0.01 + nearTR);
+
+//  bl = viewMatrix.inverse() * bl;
+//  br = viewMatrix.inverse() * br;
+//  tl = viewMatrix.inverse() * tl;
+//  tr = viewMatrix.inverse() * tr;
+
+  blPlug.child(0).setValue(bl.x);
+  blPlug.child(1).setValue(bl.y);
+  blPlug.child(2).setValue(bl.z);
+
+  brPlug.child(0).setValue(br.x);
+  brPlug.child(1).setValue(br.y);
+  brPlug.child(2).setValue(br.z);
+
+  tlPlug.child(0).setValue(tl.x);
+  tlPlug.child(1).setValue(tl.y);
+  tlPlug.child(2).setValue(tl.z);
+
+  trPlug.child(0).setValue(tr.x);
+  trPlug.child(1).setValue(tr.y);
+  trPlug.child(2).setValue(tr.z);
+
   return data;
 }
 
@@ -120,82 +166,85 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   MDagPath::getAPathTo(MFnDagNode(objPath).parent(0), model);
   MDagPath::getAPathTo(MFnDagNode(frameContext.getCurrentCameraPath()).parent(0), view);
 
-  MMatrix viewMatrix = MFnTransform(view).transformationMatrix();
-  MMatrix modelMatrix = MFnTransform(model).transformationMatrix();
+  MMatrix viewMatrix = view.inclusiveMatrix();
+  MMatrix modelMatrix = model.inclusiveMatrix();
 
-  MTransformationMatrix modelXform = MTransformationMatrix(modelMatrix);
-  MTransformationMatrix viewXform = MTransformationMatrix(viewMatrix);
+//  MMatrix viewMatrix = MFnTransform(view).transformationMatrix();
+//  MMatrix modelMatrix = MFnTransform(model).transformationMatrix();
 
-  MMatrix modelRotateMatrix = modelXform.asRotateMatrix();
-  MMatrix viewRotateMatrix = viewXform.asRotateMatrix();
+//  MTransformationMatrix modelXform = MTransformationMatrix(modelMatrix);
+//  MTransformationMatrix viewXform = MTransformationMatrix(viewMatrix);
 
-  MMatrix inverseModelMatrix = modelXform.asMatrixInverse();
-  MMatrix inverseViewMatrix = viewXform.asMatrixInverse();
+  MMatrix inverseViewMatrix = view.inclusiveMatrixInverse();
+  MMatrix inverseModelMatrix = model.inclusiveMatrixInverse();
 
   // Removes parent transforms
-  MPoint from = MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kPostTransform);
-  MPoint to = MTransformationMatrix(viewMatrix).getTranslation(MSpace::kPostTransform);
+//  MPoint from = MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kPostTransform);
+//  MPoint to = MTransformationMatrix(viewMatrix).getTranslation(MSpace::kPostTransform);
 
   MPoint worldNearPt, worldFarPt;
-  frameContext.viewportToWorld(data->m_width/2, data->m_height/2, worldNearPt, worldFarPt);
+  frameContext.viewportToWorld(data->m_viewportWidth/2, data->m_viewportHeight/2, worldNearPt, worldFarPt);
   worldNearPt = (worldFarPt - worldNearPt) * 0.01 + worldNearPt;
-
-//  MPoint origin, x, y, _;
-//  frameContext.viewportToWorld(0, 0, bl, _);
-//  frameContext.viewportToWorld(data->m_width, data->m_height, tr, _);
-//  frameContext.viewportToWorld(data->m_width, data->m_height, x, _);
-//  frameContext.viewportToWorld(0, data->m_height, y, _);
-
-//  TNC_DEBUG << "viewport(" << data->m_width << ", " << data->m_height << "), origin=" << origin << ", values=(" << x << ", " << y << "), scaled(" << (x-origin).length() << ", " << (y-origin).length() << ")";
 
   MPoint blA, blB, brA, brB, tlA, tlB, trA, trB;
   frameContext.viewportToWorld(0, 0, blA, blB);
-  frameContext.viewportToWorld(data->m_width, 0, brA, brB);
-  frameContext.viewportToWorld(0, data->m_height, tlA, tlB);
-  frameContext.viewportToWorld(data->m_width, data->m_height, trA, trB);
+  frameContext.viewportToWorld(data->m_viewportWidth, 0, brA, brB);
+  frameContext.viewportToWorld(0, data->m_viewportHeight, tlA, tlB);
+  frameContext.viewportToWorld(data->m_viewportWidth, data->m_viewportHeight, trA, trB);
 
-  MPoint bl = ((blB - blA) * 0.01 + blA) * inverseModelMatrix;
-  MPoint br = ((brB - brA) * 0.01 + brA) * inverseModelMatrix;
-  MPoint tl = ((tlB - tlA) * 0.01 + tlA) * inverseModelMatrix;
-  MPoint tr = ((trB - trA) * 0.01 + trA) * inverseModelMatrix;
+  MPoint bl = ((blB - blA) * 0.01 + blA);
+  MPoint br = ((brB - brA) * 0.01 + brA);
+  MPoint tl = ((tlB - tlA) * 0.01 + tlA);
+  MPoint tr = ((trB - trA) * 0.01 + trA);
 
-  MMatrix aim;
-  lookAt(MPoint(0,0,0), to, aim);
+//  MMatrix aim;
+//  lookAt(MPoint(0,0,0), to, aim);
 //  MMatrix foo = aim * inverseModelMatrix;
 //  MPoint pos = MPoint(foo(3, 0), foo(3, 1), foo(3, 2)) + worldNearPt;
 //  MVector cameraY(foo(1, 0), foo(1, 1), foo(1, 2));
 //  MVector cameraZ(foo(2, 0), foo(2, 1), foo(2, 2));
 
-  MMatrix blAim, brAim, tlAim, trAim;
-  lookAt(bl, to, blAim);
-  lookAt(br, to, brAim);
-  lookAt(tl, to, tlAim);
-  lookAt(tr, to, trAim);
+//  MMatrix blAim, brAim, tlAim, trAim;
+//  lookAt(bl, blA, blAim);
+//  lookAt(br, to, brAim);
+//  lookAt(tl, to, tlAim);
+//  lookAt(tr, to, trAim);
 
-  MMatrix blSpace = aim * inverseModelMatrix;
-  MMatrix brSpace = aim * inverseModelMatrix;
-  MMatrix tlSpace = aim * inverseModelMatrix;
-  MMatrix trSpace = aim * inverseModelMatrix;
+  MMatrix blSpace = viewMatrix * inverseModelMatrix;
+//  MMatrix brSpace = aim * inverseModelMatrix;
+//  MMatrix tlSpace = aim * inverseModelMatrix;
+//  MMatrix trSpace = aim * inverseModelMatrix;
 
-//  MPoint blPos = MTransformationMatrix(blSpace).getTranslation(MSpace::kWorld);
+  MMatrix posMatrix;
+  MTransformationMatrix foo(posMatrix);
+  foo.setTranslation(bl, MSpace::kWorld);
+
+  MMatrix ass = foo.asMatrix() * inverseModelMatrix;
+
+//  MPoint blPos = MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kPostTransform) + bl;
+  MPoint blPos = MTransformationMatrix(ass).getTranslation(MSpace::kWorld);
+
+
+//  MPoint blPos = MTransformationMatrix(blSpace).getTranslation(MSpace::kPostTransform) - bl;
 //  MPoint brPos = MTransformationMatrix(brSpace).getTranslation(MSpace::kWorld);
 //  MPoint tlPos = MTransformationMatrix(tlSpace).getTranslation(MSpace::kWorld);
 //  MPoint trPos = MTransformationMatrix(trSpace).getTranslation(MSpace::kWorld);
 
-  MPoint blPos = inverseModelMatrix * bl;
-  MPoint brPos = inverseModelMatrix * br;
-  MPoint tlPos = inverseModelMatrix * tl;
-  MPoint trPos = inverseModelMatrix * tr;
+//  MPoint blPos = bl;
+//  MPoint brPos = inverseModelMatrix * br;
+//  MPoint tlPos = inverseModelMatrix * tl;
+//  MPoint trPos = inverseModelMatrix * tr;
 
   MVector blUp = MVector(blSpace(1, 0), blSpace(1, 1), blSpace(1, 2));
-  MVector brUp = MVector(brSpace(1, 0), brSpace(1, 1), brSpace(1, 2));
-  MVector tlUp = MVector(tlSpace(1, 0), tlSpace(1, 1), tlSpace(1, 2));
-  MVector trUp = MVector(trSpace(1, 0), trSpace(1, 1), trSpace(1, 2));
+//  MVector blUp = MVector(blSpace(1, 0), blSpace(1, 1), blSpace(1, 2));
+//  MVector brUp = MVector(brSpace(1, 0), brSpace(1, 1), brSpace(1, 2));
+//  MVector tlUp = MVector(tlSpace(1, 0), tlSpace(1, 1), tlSpace(1, 2));
+//  MVector trUp = MVector(trSpace(1, 0), trSpace(1, 1), trSpace(1, 2));
 
   MPoint blNormal = MVector(blSpace(2, 0), blSpace(2, 1), blSpace(2, 2));
-  MPoint brNormal = MVector(brSpace(2, 0), brSpace(2, 1), brSpace(2, 2));
-  MPoint tlNormal = MVector(tlSpace(2, 0), tlSpace(2, 1), tlSpace(2, 2));
-  MPoint trNormal = MVector(trSpace(2, 0), trSpace(2, 1), trSpace(2, 2));
+//  MPoint brNormal = MVector(brSpace(2, 0), brSpace(2, 1), brSpace(2, 2));
+//  MPoint tlNormal = MVector(tlSpace(2, 0), tlSpace(2, 1), tlSpace(2, 2));
+//  MPoint trNormal = MVector(trSpace(2, 0), trSpace(2, 1), trSpace(2, 2));
 
 //  MMatrix foo = aim * inverseModelMatrix;
 //  MPoint pos = MPoint(foo(3, 0), foo(3, 1), foo(3, 2)) + worldNearPt;
@@ -207,30 +256,26 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   double halfX = 10;
   double halfY = 10;
 
+  TNC_DEBUG << "------------------------------------------------------------------------------------------------------";
+  TNC_DEBUG << "inverseModelMatrix=" << inverseModelMatrix;
+  TNC_DEBUG << "modelMatrix=" << modelMatrix;
+  TNC_DEBUG << "inverseModelMatrix pos=" << MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kWorld);
+  TNC_DEBUG << "bl near pt=" << bl;
+
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
   drawManager.setColor(MColor(0.0, 0.0, 1.0, 0.2));
   drawManager.rect(blPos, blUp, blNormal, sizeX + halfX, sizeY + halfY, true);
-  drawManager.rect(brPos, brUp, brNormal, sizeX - halfX, sizeY + halfY, true);
-  drawManager.rect(tlPos, tlUp, tlNormal, sizeX + halfX, sizeY - halfY, true);
-  drawManager.rect(trPos, trUp, trNormal, sizeX - halfX, sizeY - halfY, true);
-  TNC_DEBUG << "sizeX=" << sizeX << ", sizeY=" << sizeY;
+//  drawManager.rect(blPos, blUp, blNormal, sizeX + halfX, sizeY + halfY, true);
+//  drawManager.rect(brPos, brUp, brNormal, sizeX - halfX, sizeY + halfY, true);
+//  drawManager.rect(tlPos, tlUp, tlNormal, sizeX + halfX, sizeY - halfY, true);
+//  drawManager.rect(trPos, trUp, trNormal, sizeX - halfX, sizeY - halfY, true);
+//  TNC_DEBUG << "blPos=" << blPos << ", blUp=" << blUp << ", blNormal=" << blNormal;
 
   drawManager.setColor(MColor(0.0, 1.0, 0.0));
-  drawManager.circle2d(MPoint(data->m_width/2/2, data->m_height/2/2), 20, true);
+  drawManager.circle2d(MPoint(data->m_viewportWidth/2/2, data->m_viewportHeight/2/2), 20, true);
   drawManager.endDrawable();
 }
-//bool PickerDrawOverride::userSelect(MSelectionInfo& selectInfo,
-//                                    const MHWRender::MDrawContext& context,
-//                                    MPoint& hitPoint,
-//                                    const MUserData* data)
-//{
-//  unsigned int x, y, width, height;
-//  selectInfo.selectRect(x, y, width, height);
-//  TNC_DEBUG << "userSelect: (" << x << ", " << y << ", " << width << ", " << height << ")";
-//  return false;
-//}
-
 bool PickerDrawOverride::wantUserSelection() const {
   TNC_DEBUG << "wantUserSelection()";
   return true;
