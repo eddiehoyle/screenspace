@@ -27,6 +27,7 @@
 #include <maya/MTransformationMatrix.h>
 
 #include <vector>
+#include <cmath>
 //#include <GL/gl.h>
 
 
@@ -85,11 +86,14 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
   frameContext.viewportToWorld(data->m_viewportWidth, 0, nearBR, farBR);
   frameContext.viewportToWorld(data->m_viewportWidth, data->m_viewportHeight, nearTR, farTR);
 
-  MMatrix viewMatrix = frameContext.getMatrix(MFrameContext::MatrixType::kViewMtx);
-  MMatrix viewRotMatrix = MTransformationMatrix(viewMatrix).asRotateMatrix();
+  float diagonal = (nearTR - nearBL).length();
+  float theta = std::atanf(data->m_viewportHeight / data->m_viewportWidth);
+  float height = std::sinf(theta) * diagonal;
+  float width = std::cosf(theta) * diagonal;
 
-  data->m_viewportWidthScalar = (nearBR - nearBL).length();
-  data->m_viewportHeightScalar = (nearTL - nearBL).length();
+  TNC_DEBUG << "dimensions=(" << width << ", " << height << "), diagonal=" << diagonal;
+
+  MMatrix viewMatrix = frameContext.getMatrix(MFrameContext::MatrixType::kViewMtx);
 
   MPlug blPlug(objPath.node(), PickerShape::m_bl);
   MPlug brPlug(objPath.node(), PickerShape::m_br);
@@ -100,11 +104,6 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
   MPoint br = ((farBR - nearBR) * 0.01 + nearBR);
   MPoint tl = ((farTL - nearTL) * 0.01 + nearTL);
   MPoint tr = ((farTR - nearTR) * 0.01 + nearTR);
-
-//  bl = viewMatrix.inverse() * bl;
-//  br = viewMatrix.inverse() * br;
-//  tl = viewMatrix.inverse() * tl;
-//  tr = viewMatrix.inverse() * tr;
 
   blPlug.child(0).setValue(bl.x);
   blPlug.child(1).setValue(bl.y);
@@ -256,11 +255,11 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   double halfX = 10;
   double halfY = 10;
 
-  TNC_DEBUG << "------------------------------------------------------------------------------------------------------";
-  TNC_DEBUG << "inverseModelMatrix=" << inverseModelMatrix;
-  TNC_DEBUG << "modelMatrix=" << modelMatrix;
-  TNC_DEBUG << "inverseModelMatrix pos=" << MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kWorld);
-  TNC_DEBUG << "bl near pt=" << bl;
+//  TNC_DEBUG << "------------------------------------------------------------------------------------------------------";
+//  TNC_DEBUG << "inverseModelMatrix=" << inverseModelMatrix;
+//  TNC_DEBUG << "modelMatrix=" << modelMatrix;
+//  TNC_DEBUG << "inverseModelMatrix pos=" << MTransformationMatrix(inverseModelMatrix).getTranslation(MSpace::kWorld);
+//  TNC_DEBUG << "bl near pt=" << bl;
 
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
