@@ -79,31 +79,47 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
   int originX, originY;
   frameContext.getViewportDimensions(originX, originY, data->m_viewportWidth, data->m_viewportHeight);
 
+  MMatrix viewMatrix = cameraPath.inclusiveMatrix();
+  MMatrix viewMatrix2 = frameContext.getMatrix(MFrameContext::MatrixType::kViewMtx);
+
   MPoint nearBL, nearBR, nearTL, nearTR;
   MPoint farBL, farBR, farTL, farTR;
   frameContext.viewportToWorld(0, 0, nearBL, farBL);
-  frameContext.viewportToWorld(0, data->m_viewportHeight, nearTL, farTL);
-  frameContext.viewportToWorld(data->m_viewportWidth, 0, nearBR, farBR);
+//  frameContext.viewportToWorld(0, data->m_viewportHeight, nearTL, farTL);
+//  frameContext.viewportToWorld(data->m_viewportWidth, 0, nearBR, farBR);
   frameContext.viewportToWorld(data->m_viewportWidth, data->m_viewportHeight, nearTR, farTR);
 
-  float diagonal = (nearTR - nearBL).length();
-  float theta = std::atanf(data->m_viewportHeight / data->m_viewportWidth);
-  float height = std::sinf(theta) * diagonal;
-  float width = std::cosf(theta) * diagonal;
+  // Screenspace
+//  double diagonal = std::sqrt(std::pow(data->m_viewportWidth, 2) + std::pow(data->m_viewportHeight, 2));
+//  double theta = std::atan(double(data->m_viewportHeight) / double(data->m_viewportWidth));
+//  double height = std::sin(theta) * diagonal;
+//  double width = std::cos(theta) * diagonal;
+//  TNC_DEBUG << "theta=" << (theta * 180.0/M_PI) << ", viewport=(" << width << ", " << height << "), diagonal=" << diagonal;
 
-  TNC_DEBUG << "dimensions=(" << width << ", " << height << "), diagonal=" << diagonal;
+  // Worldspace
+  double diagonal = (nearTR - nearBL).length();
+  double theta = std::atan(double(data->m_viewportHeight) / double(data->m_viewportWidth));
+  double height = std::sin(theta) * diagonal;
+  double width = std::cos(theta) * diagonal;
 
-  MMatrix viewMatrix = frameContext.getMatrix(MFrameContext::MatrixType::kViewMtx);
+  MPoint bl = ((farBL - nearBL) * 0.01 + nearBL);
+//  MPoint br = ((farBR - nearBR) * 0.01 + nearBR);
+//  MPoint tl = ((farTL - nearTL) * 0.01 + nearTL);
+  MPoint tr = ((farTR - nearTR) * 0.01 + nearTR);
+
+  MVector right(viewMatrix(0, 0), viewMatrix(0, 1), viewMatrix(0, 2));
+  MVector up(viewMatrix(1, 0), viewMatrix(1, 1), viewMatrix(1, 2));
+  MPoint br = bl + (right * width);
+  MPoint tl = bl + (up * height);
+
+  TNC_DEBUG << "bl=" << bl << ", br=" << br << ", tl=" << tl << ", tr=" << tr;
+//  TNC_DEBUG << "theta=" << (theta * 180.0/M_PI) << ", worldpos=(" << width << ", " << height << "), diagonal=" << diagonal;
+
 
   MPlug blPlug(objPath.node(), PickerShape::m_bl);
   MPlug brPlug(objPath.node(), PickerShape::m_br);
   MPlug tlPlug(objPath.node(), PickerShape::m_tl);
   MPlug trPlug(objPath.node(), PickerShape::m_tr);
-
-  MPoint bl = ((farBL - nearBL) * 0.01 + nearBL);
-  MPoint br = ((farBR - nearBR) * 0.01 + nearBR);
-  MPoint tl = ((farTL - nearTL) * 0.01 + nearTL);
-  MPoint tr = ((farTR - nearTR) * 0.01 + nearTR);
 
   blPlug.child(0).setValue(bl.x);
   blPlug.child(1).setValue(bl.y);
