@@ -97,23 +97,42 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
 //  TNC_DEBUG << "theta=" << (theta * 180.0/M_PI) << ", viewport=(" << width << ", " << height << "), diagonal=" << diagonal;
 
   // Worldspace
-  double diagonal = (nearTR - nearBL).length();
+  double hyp = (nearTR - nearBL).length();
   double theta = std::atan(double(data->m_viewportHeight) / double(data->m_viewportWidth));
-  double height = std::sin(theta) * diagonal;
-  double width = std::cos(theta) * diagonal;
+  double adj = std::cos(theta) * hyp;
+  double opp = std::sin(theta) * hyp;
+  TNC_DEBUG << "theta=" << (theta * 180.0/M_PI) << ", ratios=(" << adj << ", " << opp << "), viewport=(" << data->m_viewportWidth << ", " << data->m_viewportHeight << "), diagonal=" << hyp;
+
+  MMatrix moveRight, moveUp, blM, trM;
+  moveRight(3, 0) = adj;
+  moveUp(3, 1) = opp;
+
+  MTransformationMatrix(blM).setTranslation(nearBL, MSpace::kWorld);
+  blM = MTransformationMatrix(viewMatrix).asRotateMatrix().inverse() * blM;
+  MMatrix viewRot = MTransformationMatrix(viewMatrix).asRotateMatrix();
+  MMatrix fooX = moveRight * viewRot * blM;
+  MMatrix fooY = moveUp * viewRot * blM;
+//  MTransformationMatrix(trM).setTranslation(nearTR, MSpace::kWorld);
+//  blM = blM * MTransformationMatrix(viewMatrix).asRotateMatrix();
+//  trM = trM * MTransformationMatrix(viewMatrix).asRotateMatrix();
+
+//  MMatrix brM = moveBR *
+
 
   MPoint bl = ((farBL - nearBL) * 0.01 + nearBL);
 //  MPoint br = ((farBR - nearBR) * 0.01 + nearBR);
 //  MPoint tl = ((farTL - nearTL) * 0.01 + nearTL);
   MPoint tr = ((farTR - nearTR) * 0.01 + nearTR);
 
-  MVector right(viewMatrix(0, 0), viewMatrix(0, 1), viewMatrix(0, 2));
-  MVector up(viewMatrix(1, 0), viewMatrix(1, 1), viewMatrix(1, 2));
-  MPoint br = bl + (right * width);
-  MPoint tl = bl + (up * height);
+  MPoint br = MTransformationMatrix(fooX).getTranslation(MSpace::kWorld);
+  MPoint tl = MTransformationMatrix(fooY).getTranslation(MSpace::kWorld);
 
-  TNC_DEBUG << "bl=" << bl << ", br=" << br << ", tl=" << tl << ", tr=" << tr;
-//  TNC_DEBUG << "theta=" << (theta * 180.0/M_PI) << ", worldpos=(" << width << ", " << height << "), diagonal=" << diagonal;
+//  MVector right(viewMatrix(0, 0), viewMatrix(0, 1), viewMatrix(0, 2));
+//  MVector up(viewMatrix(1, 0), viewMatrix(1, 1), viewMatrix(1, 2));
+//  MPoint br = bl + (right * width);
+//  MPoint tl = bl + (up * height);
+
+//  TNC_DEBUG << "bl=" << bl << ", br=" << br << ", tl=" << tl << ", tr=" << tr;
 
 
   MPlug blPlug(objPath.node(), PickerShape::m_bl);
