@@ -43,20 +43,20 @@ public:
 //                  MPoint& hitPoint,
 //                  const MUserData* data) override;
 
-  bool wantUserSelection() const override;
-
-  bool userSelect(MSelectionInfo& selectInfo,
-                  const MHWRender::MDrawContext& context,
-                  MPoint& hitPoint,
-                  const MUserData* data) override;
+//  bool wantUserSelection() const override;
+//
+//  bool userSelect(MSelectionInfo& selectInfo,
+//                  const MHWRender::MDrawContext& context,
+//                  MPoint& hitPoint,
+//                  const MUserData* data) override;
 
 
   /// Only triggers when selection is successful
-  bool refineSelectionPath(const MSelectionInfo& selectInfo,
-                                   const MRenderItem& hitItem,
-                                   MDagPath& path,
-                                   MObject& geomComponents,
-                                   MSelectionMask& objectMask) override;
+//  bool refineSelectionPath(const MSelectionInfo& selectInfo,
+//                                   const MRenderItem& hitItem,
+//                                   MDagPath& path,
+//                                   MObject& geomComponents,
+//                                   MSelectionMask& objectMask) override;
 
 private:
   PickerDrawOverride(const MObject& obj);

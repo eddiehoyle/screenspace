@@ -9,6 +9,18 @@
 
 using namespace screenspace;
 
+static const MString AEpickerTemplate = R"(global proc AEpickerTemplate(string $nodeName)
+{
+  editorTemplate -beginScrollLayout;
+  editorTemplate -beginLayout "Geometry" -collapse 0;
+    editorTemplate -addControl "size";
+    editorTemplate -addControl "width";
+    editorTemplate -addControl "height";
+  editorTemplate -endLayout;
+  editorTemplate -addExtraControls;
+  editorTemplate -endScrollLayout;
+})";
+
 MStatus initializePlugin(MObject obj) {
   MFnPlugin plugin(obj, "Eddie Hoyle", "1.0", "Any");
 
@@ -30,6 +42,8 @@ MStatus initializePlugin(MObject obj) {
   CHECK_MSTATUS(status);
 
   TNC_DEBUG << "Start plugin";
+//  MGlobal::executeCommandOnIdle(AEpickerTemplate);
+  TNC_DEBUG << "Done!";
   return status;
 }
 

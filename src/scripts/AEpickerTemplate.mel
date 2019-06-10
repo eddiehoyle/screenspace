@@ -1,0 +1,39 @@
+global proc swapShape(string $node)
+{
+  int $drawShape = `getAttr ($node+".shape")`;
+  if ($drawShape == 0)
+  {
+    editorTemplate -dimControl $node "width" true;
+    editorTemplate -dimControl $node "height" true;
+  }
+  else if ($drawShape == 1)
+  {
+    editorTemplate -dimControl $node "width" false;
+    editorTemplate -dimControl $node "height" false;
+  }
+}
+
+global proc AEpickerTemplate(string $nodeName)
+{
+  editorTemplate -beginScrollLayout;
+  editorTemplate -beginLayout "Geometry" -collapse 0;
+  editorTemplate -addControl "color";
+  editorTemplate -addControl "opacity";
+  editorTemplate -addControl "fill";
+  editorTemplate -addControl -label "Shape" "shape" "swapShape";
+  editorTemplate -addControl -label "Line Width" "lineWidth";
+  editorTemplate -addControl -label "Line Style" "lineStyle";
+  editorTemplate -addSeparator;
+  editorTemplate -addControl "size";
+  editorTemplate -addControl "width";
+  editorTemplate -addControl "height";
+  editorTemplate -addControl "offset";
+  editorTemplate -addSeparator;
+  editorTemplate -addControl "depth";
+  editorTemplate -addControl "layout";
+  editorTemplate -addControl "verticalAlign";
+  editorTemplate -addControl "horizontalAlign";
+  editorTemplate -endLayout;
+  editorTemplate -addExtraControls;
+  editorTemplate -endScrollLayout;
+}
