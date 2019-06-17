@@ -25,8 +25,11 @@
 #include <maya/MUIDrawManager.h>
 #include <maya/MPlug.h>
 #include <maya/MFnTransform.h>
+#include <maya/MVectorArray.h>
 #include <maya/MFnMatrixData.h>
+#include <maya/MColorArray.h>
 #include <maya/MTransformationMatrix.h>
+#include <maya/MQuaternion.h>
 
 #include <vector>
 #include <cmath>
@@ -39,68 +42,301 @@ namespace screenspace {
 MString PickerDrawOverride::classifcation = "drawdb/geometry/screenspace/picker";
 MString PickerDrawOverride::id = "picker";
 
+enum class Shape {
+  Circle,
+  Rectangle,
+};
+
+enum class Layout {
+  Relative,
+  Absolute,
+};
+
+enum class VerticalAlign {
+  Bottom,
+  Center,
+  Top,
+};
+
+enum class HorizontalAlign {
+  Left,
+  Center,
+  Right,
+};
+
+struct Viewport {
+  int width;
+  int height;
+  float worldspaceWidth;
+  float worldspaceHeight;
+};
+
+struct Geometry {
+  MUIDrawManager::Primitive primitive;
+  MPointArray vertices;
+  MVectorArray normals;
+  MColorArray colors;
+  MUintArray indices;
+};
+
+struct Style {
+  Shape shape;
+  MColor color;
+  bool fill;
+  float lineWidth;
+  MUIDrawManager::LineStyle lineStyle;
+};
+
+/// Compute world position for viewport and offset slightly in front of near clipping plane
+MPoint computeViewportToWorld(const MFrameContext& context,
+                              int x, int y,
+                              int depth)
+{
+  MPoint near, far;
+  context.viewportToWorld(x, y, near, far);
+
+  float scalar = 0.1f * (depth + 1);
+
+  MVector direction = (far - near);
+  direction.normalize();
+  return near + (direction * scalar);
+}
 
 class PickerUserData : public MUserData {
-public:
-  struct Viewport {
-    int width;
-    int height;
-    float scaleX;
-    float scaleY;
-  };
-
-  enum class Shape {
-    Circle,
-    Rectangle,
-  };
-
-  enum class Layout {
-    Relative,
-    Absolute,
-  };
-
-  enum class VerticalAlign {
-    Bottom,
-    Center,
-    Top,
-  };
-
-  enum class HorizontalAlign {
-    Left,
-    Center,
-    Right,
-  };
-
 public:
   PickerUserData() : MUserData(false) {}
   ~PickerUserData() override = default;
 
+  inline const MMatrix& matrix() const {return m_matrix;}
+  inline const Viewport& viewport() const {return m_viewport;}
+  inline const Geometry& geometry() const {return m_geometry;}
+  inline const Style& style() const {return m_style;}
+
 public:
-  Viewport m_viewport;
-  Shape m_shape;
-  MColor m_color;
-  bool m_fill;
-  float m_lineWidth;
-  MUIDrawManager::LineStyle m_lineStyle;
 
-  float m_size;
-  float m_width;
-  float m_height;
-
-  Layout m_layout;
-  float2 m_position;
-  VerticalAlign m_verticalAlign;
-  HorizontalAlign m_horizontalAlign;
-
-  /// Matrix scaled to viewport worldspace
   MMatrix m_matrix;
+  Viewport m_viewport;
+  Geometry m_geometry;
+  Style m_style;
 };
 
-/// TODO
-static bool isTargetCamera(MDagPath picker, MDagPath camera)
+// ---------------------------------------------------------------------------------------------------------------------
+
+void prepareMatrix(const MDagPath& pickerDag,
+                   const MDagPath& cameraDag,
+                   const MFrameContext& frameContext,
+                   PickerUserData* data)
 {
   const MNodeClass pickerCls(PickerShape::id);
-  const MObject pickerObj(picker.node());
+  const MObject pickerObj(pickerDag.node());
+
+  int _, screenspaceWidth, screenspaceHeight;
+  frameContext.getViewportDimensions(_, _, screenspaceWidth, screenspaceHeight);
+
+  // Draw depth
+  int depth;
+
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("depth")).getValue(depth));
+
+  const MPoint nearBL = computeViewportToWorld(frameContext, 0, 0, depth);
+  const MPoint nearTR = computeViewportToWorld(frameContext, screenspaceWidth, screenspaceHeight, depth);
+
+  float hyp = float((nearTR - nearBL).length());
+  float theta = atanf(float(screenspaceHeight) / float(screenspaceWidth));
+  float distanceX = cosf(theta) * hyp;
+  float distanceY = sinf(theta) * hyp;
+
+  Viewport viewport;
+  viewport.width = screenspaceWidth;
+  viewport.height = screenspaceHeight;
+  viewport.worldspaceWidth = distanceX;
+  viewport.worldspaceHeight = distanceY;
+  data->m_viewport = viewport;
+
+  // Fetch data
+  float size, width, height;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("size")).getValue(size));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("width")).getValue(width));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("height")).getValue(height));
+
+  // Draw origin
+  float viewportOffsetX, viewportOffsetY;
+  MFnNumericData numData(MPlug(pickerObj, pickerCls.attribute("offset")).asMObject());
+  CHECK_MSTATUS(numData.getData(viewportOffsetX, viewportOffsetY));
+
+  short _layout;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("layout")).getValue(_layout));
+  Layout layout = static_cast<Layout>(_layout);
+
+  // Viewport scale factor
+  float worldspaceUnitX, worldspaceUnitY;
+  switch (layout)
+  {
+    case Layout::Relative:
+      worldspaceUnitX = viewport.worldspaceWidth / 100.0f;
+      worldspaceUnitY = viewport.worldspaceHeight / 100.0f;
+      break;
+    case Layout::Absolute:
+      worldspaceUnitX = viewport.worldspaceWidth / viewport.width;
+      worldspaceUnitY = viewport.worldspaceHeight / viewport.height;
+      break;
+  }
+
+  // Prepare matrices
+  MMatrix offsetMatrix;
+  MMatrix screenspaceTranslateMatrix;
+  MMatrix screenspaceRotateMatrix;
+  MMatrix screenspaceScaleMatrix;
+
+  // Translate
+  {
+    const MPoint origin = nearBL;
+    MTransformationMatrix xform(MMatrix::identity);
+    xform.setTranslation(origin, MSpace::kWorld);
+    screenspaceTranslateMatrix = xform.asMatrix();
+  }
+
+  // Rotate
+  screenspaceRotateMatrix = MTransformationMatrix(cameraDag.inclusiveMatrix()).asRotateMatrix();
+
+  // Scale
+  {
+    MTransformationMatrix xform(MMatrix::identity);
+    const double scale[3] = {size * width * worldspaceUnitX, size * height * worldspaceUnitY, 1.0};
+    xform.setScale(scale, MSpace::kTransform);
+    screenspaceScaleMatrix = xform.asMatrix();
+  }
+
+  // Offset
+  {
+//    TNC_DEBUG << "origin=" << origin;
+//    MPoint fooPointA(viewportOffsetX * worldspaceUnitX, viewportOffsetY * worldspaceUnitY, 0.0);
+//    MTransformationMatrix xform(MMatrix::identity);
+//    xform.setTranslation(fooPointA, MSpace::kTransform);
+//    MMatrix fooMatrix = xform.asMatrix();
+//    xform = MTransformationMatrix(fooMatrix * shapeMatrix);
+//    MPoint fooPointB = xform.getTranslation(MSpace::kWorld);
+//    TNC_DEBUG << "fooPointB=" << fooPointB;
+//    shapeMatrix = xform.asMatrix();
+  }
+
+  data->m_matrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix * pickerDag.inclusiveMatrixInverse();
+
+  // Debug
+  {
+//    float viewportspaceOffsetX = tanf(theta) * viewportOffsetX * worldspaceUnitY;
+//    float viewportspaceOffsetY = sinf(theta) * viewportOffsetY * worldspaceUnitY;
+
+    // This is view space
+//    MTransformationMatrix xform(MMatrix::identity);
+//    xform.setTranslation(MPoint(viewportOffsetX, viewportOffsetY, 0), MSpace::kWorld);
+//    MMatrix viewspaceOffsetMatrix = xform.asMatrix();
+//    data->m_matrix  = viewspaceOffsetMatrix * data->m_matrix;
+
+//    MTransformationMatrix bt(viewspaceOffsetMatrix);
+//    MPoint blahPos(bt.getTranslation(MSpace::kWorld));
+
+//    MStatus status;
+//    MFnNumericData pointData;
+//    MObject pointObj = pointData.create(MFnNumericData::Type::k3Float, &status);
+//    CHECK_MSTATUS(status);
+//    status = pointData.setData(float(blahPos.x), float(blahPos.y), float(blahPos.z));
+//    CHECK_MSTATUS(status);
+//    CHECK_MSTATUS(MFnDependencyNode(pickerObj).findPlug("outPosition").setValue(pointObj));
+  }
+}
+
+void prepareGeometry(const MDagPath& pickerDag,
+                     const MDagPath& cameraDag,
+                     const MFrameContext& frameContext,
+                     PickerUserData* data)
+{
+  const MNodeClass pickerCls(PickerShape::id);
+  const MObject pickerObj(pickerDag.node());
+
+  MColor color;
+  MFnNumericData colorData(MPlug(pickerObj, pickerCls.attribute("color")).asMObject());
+  CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
+
+
+  float _vertices[4][4] = {{0.0, 0.0, 0.0, 1.0},
+                           {1.0, 0.0, 0.0, 1.0},
+                           {1.0, 1.0, 0.0, 1.0},
+                           {0.0, 1.0, 0.0, 1.0}};
+
+  float _normals[4][3] = {{0.0, 0.0, 1.0},
+                          {0.0, 0.0, 1.0},
+                          {0.0, 0.0, 1.0},
+                          {0.0, 0.0, 1.0}};
+
+  float _colors[4][4] = {{color.r, color.g, color.b, color.a},
+                         {color.r, color.g, color.b, color.a},
+                         {color.r, color.g, color.b, color.a},
+                         {color.r, color.g, color.b, color.a}};
+
+  unsigned int _indices[6] = {0, 1, 2, 0, 2, 3};
+
+  Geometry geometry;
+  geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+  geometry.vertices = MPointArray(_vertices, 4);
+  geometry.normals = MVectorArray(_normals, 4);
+  geometry.colors = MColorArray(_colors, 4);
+  geometry.indices = MUintArray(_indices, 6);
+
+  // Apply transformation
+  for (std::size_t i = 0; i < geometry.vertices.length(); ++i)
+    geometry.vertices[i] = data->m_matrix.transpose() * geometry.vertices[i];
+
+  // Store
+  data->m_geometry = geometry;
+}
+
+void prepareStyle(const MDagPath& pickerDag,
+                  const MDagPath& cameraDag,
+                  const MFrameContext& context,
+                  PickerUserData* data)
+{
+  const MNodeClass pickerCls(PickerShape::id);
+  const MObject pickerObj(pickerDag.node());
+
+  short _shape;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("shape")).getValue(_shape));
+  Shape drawShape = static_cast<Shape>(_shape);
+
+  MColor color;
+  MFnNumericData colorData(MPlug(pickerObj, pickerCls.attribute("color")).asMObject());
+  CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
+
+  float fill, lineWidth;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("fill")).getValue(fill));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("lineWidth")).getValue(lineWidth));
+
+  short _lineStyle;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("lineStyle")).getValue(_lineStyle));
+  MUIDrawManager::LineStyle lineStyle = static_cast<MUIDrawManager::LineStyle>(_lineStyle);
+
+  Style style;
+  style.shape = drawShape;
+  style.color = color;
+  style.fill = fill;
+  style.lineStyle = lineStyle;
+  style.lineWidth = lineWidth;
+  data->m_style = style;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+MPxDrawOverride* PickerDrawOverride::creator(const MObject& obj)
+{
+  return new PickerDrawOverride(obj);
+}
+
+bool PickerDrawOverride::isTargetCamera(const MDagPath& pickerDag, const MDagPath& cameraDag) const
+{
+  const MNodeClass pickerCls(PickerShape::id);
+  const MObject pickerObj(pickerDag.node());
   const MPlug cameraPlug(pickerObj, pickerCls.attribute("camera"));
 
   MPlugArray srcPlugArray;
@@ -109,212 +345,32 @@ static bool isTargetCamera(MDagPath picker, MDagPath camera)
   {
     const MPlug srcPlug(srcPlugArray[0]);
     const MObject srcNode(srcPlug.node());
-    if (srcNode.hasFn(MFn::kCamera) && (srcNode == camera.node()))
+    if (srcNode.hasFn(MFn::kCamera) && (srcNode == cameraDag.node()))
       return true;
   }
   return false;
 }
 
-/// Compute world position for viewport and offset slightly in front of near clipping plane
-void computeViewportToWorld(const MFrameContext& context,
-                            int x, int y,
-                            int depth,
-                            MPoint& position)
-{
-  MPoint near, far;
-  context.viewportToWorld(x, y, near, far);
-
-  float increment = 1.0 + (0.01 * depth);
-
-  // Output
-  MVector direction = (far - near);
-  direction.normalize();
-  position = near + (direction * increment);
-}
-
-void static computeViewportToWorldDistance(const MFrameContext& context,
-//                                           int offsetX,
-//                                           int offsetY,
-                                           int depth,
-//                                           PickerUserData::HorizontalAlign horizontalAlign,
-//                                           PickerUserData::VerticalAlign verticalAlign,
-                                           MPoint& origin,
-                                           float& scalarX,
-                                           float& scalarY)
-{
-  int _, width, height;
-  context.getViewportDimensions(_, _, width, height);
-
-  MPoint nearBL, nearTR, offset;
-  computeViewportToWorld(context, 0, 0, depth, nearBL);
-  computeViewportToWorld(context, width, height, depth, nearTR);
-//  computeViewportToWorld(context, offsetX, offsetY, depth, offset);
-
-  float hyp = float((nearTR - nearBL).length());
-  float theta = atanf(float(height) / float(width));
-  scalarX = cosf(theta) * hyp;
-  scalarY = sinf(theta) * hyp;
-
-//  MPoint offsetHorizontalAlign;
-//  switch (horizontalAlign)
-//  {
-//    case PickerUserData::HorizontalAlign::Left:
-//      computeViewportToWorld(context, 0, 0, depth, offsetHorizontalAlign);
-//      TNC_DEBUG << "HorizontalAlign::Left : offsetHorizontalAlign=" << offsetHorizontalAlign;
-//      break;
-//    case PickerUserData::HorizontalAlign::Center:
-//      computeViewportToWorld(context, int(width/2.0f), 0, depth, offsetHorizontalAlign);
-//      TNC_DEBUG << "HorizontalAlign::Center : offsetHorizontalAlign=" << offsetHorizontalAlign;
-//      break;
-//    case PickerUserData::HorizontalAlign::Right:
-//      computeViewportToWorld(context, width, 0, depth, offsetHorizontalAlign);
-//      TNC_DEBUG << "HorizontalAlign::Right : offsetHorizontalAlign=" << offsetHorizontalAlign;
-//      break;
-//  }
-//
-//  MPoint offsetVerticalAlign;
-//  switch (verticalAlign)
-//  {
-//    case PickerUserData::VerticalAlign::Bottom:
-//      computeViewportToWorld(context, 0, 0, depth, offsetVerticalAlign);
-//      TNC_DEBUG << "VerticalAlign::Bottom : offsetVerticalAlign=" << offsetVerticalAlign;
-//      break;
-//    case PickerUserData::VerticalAlign::Center:
-//      computeViewportToWorld(context, 0, int(height/2.0f), depth, offsetVerticalAlign);
-//      TNC_DEBUG << "VerticalAlign::Center : offsetVerticalAlign=" << offsetVerticalAlign;
-//      break;
-//    case PickerUserData::VerticalAlign::Top:
-//      computeViewportToWorld(context, 0, height, depth, offsetVerticalAlign);
-//      TNC_DEBUG << "VerticalAlign::Top : offsetVerticalAlign=" << offsetVerticalAlign;
-//      break;
-//  }
-//
-//  TNC_DEBUG << "horizonal=" << (offsetHorizontalAlign - nearBL) << ", vertical=" << (offsetVerticalAlign - nearBL);
-
-  // Output
-//  origin = nearBL + (offsetHorizontalAlign - nearBL) + (offsetVerticalAlign - nearBL) + (offset - nearBL);
-  origin = nearBL;
-}
-
-MPxDrawOverride* PickerDrawOverride::creator(const MObject& obj)
-{
-  return new PickerDrawOverride(obj);
-}
-
-MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& objPath,
-                                              const MDagPath& cameraPath,
+MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& pickerDag,
+                                              const MDagPath& cameraDag,
                                               const MFrameContext& frameContext,
                                               MUserData* userData) {
 
-  if (!isTargetCamera(objPath, cameraPath))
+  if (!isTargetCamera(pickerDag, cameraDag))
     return nullptr;
 
   PickerUserData* data = dynamic_cast<PickerUserData*>(userData);
   if (!data)
     data = new PickerUserData();
 
-  const MNodeClass pickerCls(PickerShape::id);
-  const MObject pickerObj(objPath.node());
+  prepareMatrix(pickerDag, cameraDag, frameContext, data);
+  prepareGeometry(pickerDag, cameraDag, frameContext, data);
+  prepareStyle(pickerDag, cameraDag, frameContext, data);
 
-  // Viewport
-  int _, width, height;
-  frameContext.getViewportDimensions(_, _, width, height);
-  data->m_viewport.width = width;
-  data->m_viewport.height = height;
-
-  // Draw depth
-  int depth;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("depth")).getValue(depth));
-
-  // Distance between points in worldspace
-  MPoint origin;
-  float scaleX, scaleY;
-  computeViewportToWorldDistance(frameContext,
-                                 depth,
-                                 origin,
-                                 scaleX,
-                                 scaleY);
-
-  // Viewport scale factor
-  switch (data->m_layout)
-  {
-    case PickerUserData::Layout::Relative:
-      data->m_viewport.scaleX = scaleX / 100.0f;
-      data->m_viewport.scaleY = scaleY / 100.0f;
-      break;
-    case PickerUserData::Layout::Absolute:
-      data->m_viewport.scaleX = scaleX / data->m_viewport.width;
-      data->m_viewport.scaleY = scaleY / data->m_viewport.height;
-      break;
-  }
-
-  short horizontalAlign;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("horizontalAlign")).getValue(horizontalAlign));
-  data->m_horizontalAlign = static_cast<PickerUserData::HorizontalAlign>(horizontalAlign);
-
-  short verticalAlign;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("verticalAlign")).getValue(verticalAlign));
-  data->m_verticalAlign = static_cast<PickerUserData::VerticalAlign>(verticalAlign);
-
-  MPoint offset;
-  {
-    MPlug plug(pickerObj, pickerCls.attribute("offset"));
-    MFnNumericData numData(plug.asMObject());
-
-    float offsetX, offsetY;
-    CHECK_MSTATUS(numData.getData(offsetX, offsetY));
-    computeViewportToWorld(frameContext, offsetX, offsetY, depth, offset);
-  }
-
-  origin += (offset - origin) ;
-
-  // Fetch data
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("size")).getValue(data->m_size));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("width")).getValue(data->m_width));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("height")).getValue(data->m_height));
-
-  short layout;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("layout")).getValue(layout));
-  data->m_layout = static_cast<PickerUserData::Layout>(layout);
-
-  short shape;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("shape")).getValue(shape));
-  data->m_shape = static_cast<PickerUserData::Shape>(shape);
-
-  {
-    MPlug plug(pickerObj, pickerCls.attribute("color"));
-    MFnNumericData numData(plug.asMObject());
-    CHECK_MSTATUS(numData.getData(data->m_color.r,
-                                  data->m_color.g,
-                                  data->m_color.b));
-    CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(data->m_color.a));
-  }
-
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("fill")).getValue(data->m_fill));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("lineWidth")).getValue(data->m_lineWidth));
-
-  short lineStyle;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("lineStyle")).getValue(lineStyle));
-  data->m_lineStyle = static_cast<MUIDrawManager::LineStyle>(lineStyle);
-
-  float t[4][4] = {{1.0f,0.0f,0.0f,0.0f},
-                   {0.0f,1.0f,0.0f,0.0f},
-                   {0.0f,0.0f,1.0f,0.0f},
-                   {float(origin.x), float(origin.y),float(origin.z),1}};
-  float s[4][4] = {{scaleX,0.0f,0.0f,0.0f},
-                   {0.0f,scaleY,0.0f,0.0f},
-                   {0.0f,0.0f,1.0f,0.0f},
-                   {0.0f,0.0f,0.0f,1.0f}};
-
-  MMatrix translate(t);
-  MMatrix rotate = MTransformationMatrix(cameraPath.inclusiveMatrix()).asRotateMatrix();
-  MMatrix scale(s);
-  MMatrix matrix = scale * rotate * translate;
-  data->m_matrix = matrix * objPath.inclusiveMatrixInverse();
-
+  // Debug
   MFnMatrixData matrixData;
   MObject matrixObj = matrixData.create(data->m_matrix);
-  MFnDependencyNode(objPath.node()).findPlug("outMatrix").setValue(matrixObj);
+  MFnDependencyNode(pickerDag.node()).findPlug("outMatrix").setValue(matrixObj);
 
   return data;
 }
@@ -328,31 +384,21 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   if (!data)
     return;
 
-  MMatrix matrix = data->m_matrix;
-  MPoint position(matrix(3, 0), matrix(3, 1), matrix(3, 2));
-  MVector up(matrix(1, 0), matrix(1, 1), matrix(1, 2));
-  MVector normal(matrix(2, 0), matrix(2, 1), matrix(2, 2));
-
-  double scale[3];
-  MTransformationMatrix(matrix).getScale(scale, MSpace::kWorld);
-
-  float sizeX = data->m_size *  data->m_viewport.scaleX + data->m_width * data->m_viewport.scaleX ;
-  float sizeY = data->m_size *  data->m_viewport.scaleY + data->m_height * data->m_viewport.scaleY;
+  const MMatrix& matrix = data->matrix();
+  const Geometry& geometry = data->geometry();
+  const Style& style = data->style();
 
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
-  drawManager.setColor(data->m_color);
-  drawManager.setLineWidth(data->m_lineWidth);
-  drawManager.setLineStyle(data->m_lineStyle);
-  switch (data->m_shape)
-  {
-    case PickerUserData::Shape::Circle:
-      drawManager.circle(position, normal, data->m_size * data->m_viewport.scaleY, data->m_fill);
-      break;
-    case PickerUserData::Shape::Rectangle:
-      drawManager.rect(position, up, normal, sizeX, sizeY, data->m_fill);
-      break;
-  }
+  drawManager.setColor(style.color);
+  drawManager.setLineWidth(style.lineWidth);
+  drawManager.setLineStyle(style.lineStyle);
+  drawManager.mesh(MUIDrawManager::Primitive::kTriangles,
+                   geometry.vertices,
+                   &geometry.normals,
+                   &geometry.colors,
+                   &geometry.indices,
+                   nullptr);
   drawManager.endDrawable();
 }
 

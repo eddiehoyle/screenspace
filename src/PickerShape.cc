@@ -40,7 +40,9 @@ MObject PickerShape::m_horizontalAlign;
 MObject PickerShape::m_offset;
 
 MObject PickerShape::m_camera;
+
 MObject PickerShape::m_outMatrix;
+MObject PickerShape::m_outPosition;
 
 void* PickerShape::creator() {
   TNC_DEBUG << "Creating picker...";
@@ -213,8 +215,18 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setKeyable(true));
   CHECK_MSTATUS(nAttr.setStorable(true));
   CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(addAttribute(m_outMatrix));
   CHECK_MSTATUS(nAttr.setCached(true));
+
+  m_outPosition = nAttr.create("outPosition", "outp", MFnNumericData::k3Float, 0.0f, &status);
+  CHECK_MSTATUS(status);
+  CHECK_MSTATUS(nAttr.setDefault(0.0f, 0.0f, 0.0f));
+  CHECK_MSTATUS(nAttr.setKeyable(true));
+  CHECK_MSTATUS(nAttr.setStorable(true));
+  CHECK_MSTATUS(nAttr.setWritable(true));
+  CHECK_MSTATUS(nAttr.setCached(true));
+
+  CHECK_MSTATUS(addAttribute(m_outMatrix));
+  CHECK_MSTATUS(addAttribute(m_outPosition));
 
   return MStatus::kSuccess;
 }
