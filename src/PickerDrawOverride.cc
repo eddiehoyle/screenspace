@@ -87,10 +87,25 @@ struct Style {
   MUIDrawManager::LineStyle lineStyle;
 };
 
+bool linePlaneIntersection(const MVector& ray, const MVector& rayOrigin,
+                           const MVector& normal, const MPoint& coord,
+                           MPoint& contact) {
+  if (normal * ray == 0)
+    return false;
+
+  float d = normal * coord;
+  float x = (d - (normal * rayOrigin)) / (normal * ray);
+
+  MVector normalRay = ray;
+  normalRay.normalize();
+  contact = rayOrigin + normalRay * x;
+
+  return true;
+}
+
 /// Compute world position for viewport and offset slightly in front of near clipping plane
 MPoint computeViewportToWorld(const MFrameContext& context,
-                              int x, int y,
-                              int depth)
+                              int x, int y, int depth)
 {
   MPoint near, far;
   context.viewportToWorld(x, y, near, far);
@@ -99,8 +114,53 @@ MPoint computeViewportToWorld(const MFrameContext& context,
 
   MVector direction = (far - near);
   direction.normalize();
+
   return near + (direction * scalar);
 }
+
+
+//MPoint computeViewportToWorld2(const MFrameContext& frameContext,
+//                               int x, int y, int depth,
+//                               float unitX, float unitZ)
+//{
+
+//  int _, viewportWidth, viewportHeight;
+//  frameContext.getViewportDimensions(_, _, viewportWidth, viewportHeight);
+//
+//  const MPoint nearBL = computeViewportToWorld(frameContext, 0, 0, depth);
+//  const MPoint nearTR = computeViewportToWorld(frameContext, viewportWidth, viewportHeight, depth);
+//  const MPoint offset = computeViewportToWorld(frameContext, x, y, depth);
+//
+//  float hyp = float((nearTR - nearBL).length());
+//  float theta = atanf(float(viewportHeight) / float(viewportWidth));
+//  float distanceX = cosf(theta) * hyp;
+//  float distanceY = sinf(theta) * hyp;
+
+  // -----------------
+
+
+//  MPoint near, far;
+//  frameContext.viewportToWorld(0, 0, near, far);
+//
+//  float scalar = 0.1f * (depth + 1);
+//  MVector direction = (far - near);
+//  direction.normalize();
+//  MPoint origin = near + (direction * scalar);
+
+MPoint computeOffset(const MMatrix& viewMatrix, const MVector& ray, const MPoint& coord) {
+  MPoint rayOrigin = MTransformationMatrix(viewMatrix).getTranslation(MSpace::kWorld);
+  MVector normal = -ray;
+  MPoint contact;
+  TNC_DEBUG << "coord=" << coord << ", normal=" << normal << ", ray=" << ray << ", rayOrigin=" << rayOrigin;
+  bool result = linePlaneIntersection(ray, rayOrigin, normal, coord, contact);
+
+  if (result)
+    TNC_DEBUG << "Hit! " << contact;
+  else
+    TNC_DEBUG << "Miss...";
+  return contact;
+}
+
 
 class PickerUserData : public MUserData {
 public:
@@ -140,6 +200,7 @@ void prepareMatrix(const MDagPath& pickerDag,
 
   const MPoint nearBL = computeViewportToWorld(frameContext, 0, 0, depth);
   const MPoint nearTR = computeViewportToWorld(frameContext, screenspaceWidth, screenspaceHeight, depth);
+  const MPoint origin = nearBL;
 
   float hyp = float((nearTR - nearBL).length());
   float theta = atanf(float(screenspaceHeight) / float(screenspaceWidth));
@@ -163,6 +224,15 @@ void prepareMatrix(const MDagPath& pickerDag,
   float viewportOffsetX, viewportOffsetY;
   MFnNumericData numData(MPlug(pickerObj, pickerCls.attribute("offset")).asMObject());
   CHECK_MSTATUS(numData.getData(viewportOffsetX, viewportOffsetY));
+
+  MMatrix viewMatrix = cameraDag.inclusiveMatrix();
+  MPoint offset = computeViewportToWorld(frameContext, viewportOffsetX, viewportOffsetY, depth);
+//  MVector viewOrigin = MTransformationMatrix(viewMatrix).getTranslation(MSpace::kWorld);
+//  MVector offsetRay = viewOrigin + offset;
+  MVector offsetRay = offset;
+//  offsetRay.normalize();
+  offset = computeOffset(viewMatrix, offsetRay, origin);
+  TNC_DEBUG << "origin=" << origin << ", offset=" << offset;
 
   short _layout;
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("layout")).getValue(_layout));
@@ -190,9 +260,8 @@ void prepareMatrix(const MDagPath& pickerDag,
 
   // Translate
   {
-    const MPoint origin = nearBL;
     MTransformationMatrix xform(MMatrix::identity);
-    xform.setTranslation(origin, MSpace::kWorld);
+    xform.setTranslation(offset, MSpace::kWorld);
     screenspaceTranslateMatrix = xform.asMatrix();
   }
 
@@ -243,6 +312,22 @@ void prepareMatrix(const MDagPath& pickerDag,
 //    status = pointData.setData(float(blahPos.x), float(blahPos.y), float(blahPos.z));
 //    CHECK_MSTATUS(status);
 //    CHECK_MSTATUS(MFnDependencyNode(pickerObj).findPlug("outPosition").setValue(pointObj));
+  }
+
+//  TNC_DEBUG << "viewport=(" << viewport.width << ", " << viewport.height << ")";
+
+  {
+    float inViewportX, inViewportY;
+    MFnNumericData inNumData(MPlug(pickerObj, pickerCls.attribute("inViewport")).asMObject());
+    CHECK_MSTATUS(inNumData.getData(inViewportX, inViewportY));
+
+    const MPoint pt = computeViewportToWorld(frameContext, inViewportX, inViewportY, depth);
+
+    MFnNumericData outNumData;
+    outNumData.create(MFnNumericData::Type::k4Double);
+    outNumData.setData(pt.x, pt.y, pt.z, pt.w);
+    MObject outViewportObj = outNumData.object();
+    CHECK_MSTATUS(MFnDependencyNode(pickerObj).findPlug("outViewport").setValue(outViewportObj));
   }
 }
 
@@ -371,6 +456,13 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& pickerDag,
   MFnMatrixData matrixData;
   MObject matrixObj = matrixData.create(data->m_matrix);
   MFnDependencyNode(pickerDag.node()).findPlug("outMatrix").setValue(matrixObj);
+
+
+  const MNodeClass pickerCls(PickerShape::id);
+  const MObject pickerObj(pickerDag.node());
+  const MPlug cameraPlug(pickerObj, pickerCls.attribute("camera"));
+
+
 
   return data;
 }

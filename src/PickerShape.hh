@@ -39,6 +39,8 @@ private:
   // Debug
   static MObject m_outMatrix;
   static MObject m_outPosition;
+  static MObject m_inViewport;
+  static MObject m_outViewport;
 };
 
 }
