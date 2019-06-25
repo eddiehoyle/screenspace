@@ -32,6 +32,9 @@ private:
   static MObject m_layout;
   static MObject m_verticalAlign;
   static MObject m_horizontalAlign;
+
+  static MObject m_offsetX;
+  static MObject m_offsetY;
   static MObject m_offset;
 
   static MObject m_camera;

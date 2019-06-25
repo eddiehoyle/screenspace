@@ -37,6 +37,8 @@ MObject PickerShape::m_depth;
 MObject PickerShape::m_layout;
 MObject PickerShape::m_verticalAlign;
 MObject PickerShape::m_horizontalAlign;
+MObject PickerShape::m_offsetX;
+MObject PickerShape::m_offsetY;
 MObject PickerShape::m_offset;
 
 MObject PickerShape::m_camera;
@@ -178,13 +180,24 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(eAttr.addField("Center", 1));
   CHECK_MSTATUS(eAttr.addField("Right", 2));
 
-  m_offset = nAttr.create("offset", "ofs", MFnNumericData::k2Float, 0.0f, &status);
+  m_offsetX = nAttr.create("offsetX", "ofsx", MFnNumericData::kFloat, 0.0, &status);
+  CHECK_MSTATUS(status);
+  CHECK_MSTATUS(nAttr.setMin(0.0f));
+  CHECK_MSTATUS(nAttr.setMax(100.0f));
+
+  m_offsetY = nAttr.create("offsetY", "ofsy", MFnNumericData::kFloat, 0.0, &status);
+  CHECK_MSTATUS(status);
+  CHECK_MSTATUS(nAttr.setMin(0.0f));
+  CHECK_MSTATUS(nAttr.setMax(100.0f));
+
+  m_offset = nAttr.create("offset", "ofs", m_offsetX, m_offsetY, MObject::kNullObj, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(nAttr.setDefault(0.0f, 0.0f));
   CHECK_MSTATUS(nAttr.setKeyable(true));
   CHECK_MSTATUS(nAttr.setStorable(true));
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
+
 
   m_camera = mAttr.create("camera", "cam", &status);
   CHECK_MSTATUS(status);
