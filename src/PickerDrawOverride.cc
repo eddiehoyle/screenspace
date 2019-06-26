@@ -186,14 +186,50 @@ void prepareMatrix(const MDagPath& pickerDag,
       break;
   }
 
+  short _horizontalAlign;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("horizontalAlign")).getValue(_horizontalAlign));
+  HorizontalAlign horizontalAlign = static_cast<HorizontalAlign>(_horizontalAlign);
+
+  float _verticalAlign;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("verticalAlign")).getValue(_verticalAlign));
+  VerticalAlign verticalAlign = static_cast<VerticalAlign>(_verticalAlign);
+
+  float alignOffsetX;
+  switch (horizontalAlign)
+  {
+    case HorizontalAlign::Left:
+      alignOffsetX = 0.0f;
+      break;
+    case HorizontalAlign::Center:
+      alignOffsetX = viewport.width / 2.0f;
+      break;
+    case HorizontalAlign::Right:
+      alignOffsetX = viewport.width;
+      break;
+  }
+
+  float alignOffsetY;
+  switch (verticalAlign)
+  {
+    case VerticalAlign::Bottom:
+      alignOffsetY = 0.0f;
+      break;
+    case VerticalAlign::Center:
+      alignOffsetY = viewport.height / 2.0f;
+      break;
+    case VerticalAlign::Top:
+      alignOffsetY = viewport.height;
+      break;
+  }
+
   // Offset
   float viewportOffsetX, viewportOffsetY;
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetX")).getValue(viewportOffsetX));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetY")).getValue(viewportOffsetY));
   MPoint viewportOffset = computeViewportToWorld(frameContext,
-                                            viewportOffsetX * viewportUnitX,
-                                            viewportOffsetY * viewportUnitY,
-                                            depth);
+                                                 alignOffsetX + viewportOffsetX * viewportUnitX,
+                                                 alignOffsetY + viewportOffsetY * viewportUnitY,
+                                                 depth);
 
   // Compute offset
   MMatrix viewMatrix = cameraDag.inclusiveMatrix();

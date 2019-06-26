@@ -174,13 +174,13 @@ MStatus PickerShape::initialize() {
 
   m_offsetX = nAttr.create("offsetX", "ofsx", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setMin(0.0f));
-  CHECK_MSTATUS(nAttr.setMax(100.0f));
+  CHECK_MSTATUS(nAttr.setMin(-200.0f));
+  CHECK_MSTATUS(nAttr.setMax(200.0f));
 
   m_offsetY = nAttr.create("offsetY", "ofsy", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setMin(0.0f));
-  CHECK_MSTATUS(nAttr.setMax(100.0f));
+  CHECK_MSTATUS(nAttr.setMin(-200.0f));
+  CHECK_MSTATUS(nAttr.setMax(200.0f));
 
   m_offset = nAttr.create("offset", "ofs", m_offsetX, m_offsetY, MObject::kNullObj, &status);
   CHECK_MSTATUS(status);
