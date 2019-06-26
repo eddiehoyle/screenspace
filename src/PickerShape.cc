@@ -43,19 +43,11 @@ MObject PickerShape::m_offset;
 
 MObject PickerShape::m_camera;
 
-MObject PickerShape::m_outMatrix;
-MObject PickerShape::m_outPosition;
-MObject PickerShape::m_inViewport;
-MObject PickerShape::m_outViewport;
-
 void* PickerShape::creator() {
-  TNC_DEBUG << "Creating picker...";
   return new PickerShape();
 }
 
 MStatus PickerShape::initialize() {
-  TNC_DEBUG << "Initializing picker...";
-
   MObject obj;
   MStatus status;
 
@@ -198,10 +190,10 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-
   m_camera = mAttr.create("camera", "cam", &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(nAttr.setWritable(true));
+  CHECK_MSTATUS(nAttr.setReadable(false));
 
   CHECK_MSTATUS(addAttribute(m_shape));
   CHECK_MSTATUS(addAttribute(m_color));
@@ -221,46 +213,6 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(addAttribute(m_offset));
 
   CHECK_MSTATUS(addAttribute(m_camera));
-
-  // ---------------------------------------------
-
-  MFnMatrixAttribute mxAttr;
-  m_outMatrix = mxAttr.create("outMatrix", "outm", MFnMatrixAttribute::Type::kFloat, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setKeyable(true));
-  CHECK_MSTATUS(nAttr.setStorable(true));
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setCached(true));
-
-  m_outPosition = nAttr.create("outPosition", "outp", MFnNumericData::k3Float, 0.0f, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setDefault(0.0f, 0.0f, 0.0f));
-  CHECK_MSTATUS(nAttr.setKeyable(true));
-  CHECK_MSTATUS(nAttr.setStorable(true));
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setCached(true));
-
-  CHECK_MSTATUS(addAttribute(m_outMatrix));
-  CHECK_MSTATUS(addAttribute(m_outPosition));
-
-  m_inViewport = nAttr.create("inViewport", "invp", MFnNumericData::k2Float, 0.0f, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setDefault(0.0f, 0.0f));
-  CHECK_MSTATUS(nAttr.setKeyable(true));
-  CHECK_MSTATUS(nAttr.setStorable(true));
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setCached(true));
-
-  m_outViewport = nAttr.create("outViewport", "outvp", MFnNumericData::k4Double, 0.0, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setDefault(0.0f, 0.0f, 0.0f, 0.0f));
-  CHECK_MSTATUS(nAttr.setKeyable(true));
-  CHECK_MSTATUS(nAttr.setStorable(true));
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setCached(true));
-
-  CHECK_MSTATUS(addAttribute(m_inViewport));
-  CHECK_MSTATUS(addAttribute(m_outViewport));
 
   return MStatus::kSuccess;
 }

@@ -34,7 +34,6 @@
 #include <vector>
 #include <cmath>
 #include <maya/MPlugArray.h>
-//#include <GL/gl.h>
 
 
 namespace screenspace {
@@ -87,16 +86,14 @@ struct Style {
   MUIDrawManager::LineStyle lineStyle;
 };
 
-bool linePlaneIntersection(const MVector& ray, const MVector& rayOrigin,
+bool linePlaneIntersection(const MVector& ray, const MVector& origin,
                            const MVector& normal, const MPoint& coord,
                            MPoint& contact) {
-
   if (normal * ray == 0)
     return false;
-
-  float d = normal * coord;
-  float x = (d - (normal * rayOrigin)) / (normal * ray);
-  contact = rayOrigin + ray * x;
+  const float dot = normal * coord;
+  const float scalar = (dot - (normal * origin)) / (normal * ray);
+  contact = origin + ray * scalar;
   return true;
 }
 
@@ -107,6 +104,7 @@ MPoint computeViewportToWorld(const MFrameContext& context,
   MPoint near, far;
   context.viewportToWorld(x, y, near, far);
 
+  // TODO: Improve this
   float scalar = 0.1f * (depth + 1);
 
   MVector direction = (far - near);
@@ -143,35 +141,27 @@ void prepareMatrix(const MDagPath& pickerDag,
   const MNodeClass pickerCls(PickerShape::id);
   const MObject pickerObj(pickerDag.node());
 
-  int _, screenspaceWidth, screenspaceHeight;
-  frameContext.getViewportDimensions(_, _, screenspaceWidth, screenspaceHeight);
+  int _, viewportWidth, viewportHeight;
+  frameContext.getViewportDimensions(_, _, viewportWidth, viewportHeight);
 
   // Draw depth
   int depth;
-
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("depth")).getValue(depth));
 
   const MPoint nearBL = computeViewportToWorld(frameContext, 0, 0, depth);
-  const MPoint nearTR = computeViewportToWorld(frameContext, screenspaceWidth, screenspaceHeight, depth);
-  const MPoint origin = nearBL;
+  const MPoint nearTR = computeViewportToWorld(frameContext, viewportWidth, viewportHeight, depth);
 
   float hyp = float((nearTR - nearBL).length());
-  float theta = atanf(float(screenspaceHeight) / float(screenspaceWidth));
-  float distanceX = cosf(theta) * hyp;
-  float distanceY = sinf(theta) * hyp;
+  float theta = atanf(float(viewportHeight) / float(viewportWidth));
+  float worldspaceWidth = cosf(theta) * hyp;
+  float worldspaceHeight = sinf(theta) * hyp;
 
   Viewport viewport;
-  viewport.width = screenspaceWidth;
-  viewport.height = screenspaceHeight;
-  viewport.worldspaceWidth = distanceX;
-  viewport.worldspaceHeight = distanceY;
+  viewport.width = viewportWidth;
+  viewport.height = viewportHeight;
+  viewport.worldspaceWidth = worldspaceWidth;
+  viewport.worldspaceHeight = worldspaceHeight;
   data->m_viewport = viewport;
-
-  // Fetch data
-  float size, width, height;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("size")).getValue(size));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("width")).getValue(width));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("height")).getValue(height));
 
   short _layout;
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("layout")).getValue(_layout));
@@ -196,26 +186,29 @@ void prepareMatrix(const MDagPath& pickerDag,
       break;
   }
 
-  // Draw origin
+  // Offset
   float viewportOffsetX, viewportOffsetY;
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetX")).getValue(viewportOffsetX));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetY")).getValue(viewportOffsetY));
-  MPoint preOffset = computeViewportToWorld(frameContext, viewportOffsetX, viewportOffsetY, depth);
+  MPoint viewportOffset = computeViewportToWorld(frameContext,
+                                            viewportOffsetX * viewportUnitX,
+                                            viewportOffsetY * viewportUnitY,
+                                            depth);
 
+  // Compute offset
   MMatrix viewMatrix = cameraDag.inclusiveMatrix();
   MPoint rayOrigin = MTransformationMatrix(viewMatrix).getTranslation(MSpace::kWorld);
-  MVector ray = (rayOrigin + preOffset) * -1;
+  MVector ray = viewportOffset - rayOrigin;
   ray.normalize();
   MVector normal = MVector(viewMatrix(2, 0), viewMatrix(2, 1), viewMatrix(2, 2));
-  MPoint coord = origin;
-  MPoint contact;
-  TNC_DEBUG << "ray=" << ray << ", rayOrigin=" << rayOrigin << ", normal=" << normal << ", coord=" << coord;
-  bool result = linePlaneIntersection(ray, rayOrigin, normal, coord, contact);
-  MPoint offset = contact;
-  TNC_DEBUG << (result ? "Hit! " : "Miss... ") << "origin=" << origin << ", offset=" << offset << ", preoffset=" << preOffset;
-//  TNC_DEBUG << "offset=" << offset << ", units=(" << worldspaceUnitX << ", " << worldspaceUnitY << ")";
-//  TNC_DEBUG << "origin=" << origin;
-//  TNC_DEBUG << "offset=" << offset << "\n";
+  MPoint position;
+  linePlaneIntersection(ray, rayOrigin, normal, nearBL, position);
+
+  // Fetch data
+  float size, width, height;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("size")).getValue(size));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("width")).getValue(width));
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("height")).getValue(height));
 
   // Prepare matrices
   MMatrix screenspaceTranslateMatrix;
@@ -225,7 +218,7 @@ void prepareMatrix(const MDagPath& pickerDag,
   // Translate
   {
     MTransformationMatrix xform(MMatrix::identity);
-    xform.setTranslation(origin + (offset - origin), MSpace::kWorld);
+    xform.setTranslation(position, MSpace::kWorld);
     screenspaceTranslateMatrix = xform.asMatrix();
   }
 
@@ -235,73 +228,13 @@ void prepareMatrix(const MDagPath& pickerDag,
   // Scale
   {
     MTransformationMatrix xform(MMatrix::identity);
-    const double scale[3] = {size * width * worldspaceUnitX, size * height * worldspaceUnitY, 1.0};
+    const double scale[3] = {size * width * worldspaceUnitX,
+                             size * height * worldspaceUnitY, 1.0};
     xform.setScale(scale, MSpace::kTransform);
     screenspaceScaleMatrix = xform.asMatrix();
   }
 
-  // Offset
-  {
-//    TNC_DEBUG << "origin=" << origin;
-//    MPoint fooPointA(viewportOffsetX * worldspaceUnitX, viewportOffsetY * worldspaceUnitY, 0.0);
-//    MTransformationMatrix xform(MMatrix::identity);
-//    xform.setTranslation(fooPointA, MSpace::kTransform);
-//    MMatrix fooMatrix = xform.asMatrix();
-//    xform = MTransformationMatrix(fooMatrix * shapeMatrix);
-//    MPoint fooPointB = xform.getTranslation(MSpace::kWorld);
-//    TNC_DEBUG << "fooPointB=" << fooPointB;
-//    shapeMatrix = xform.asMatrix();
-  }
-
   data->m_matrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix * pickerDag.inclusiveMatrixInverse();
-
-//  TNC_DEBUG << "Final out position=" << MTransformationMatrix(data->m_matrix).getTranslation(MSpace::kWorld);
-//  TNC_DEBUG << "matrix=" << data->m_matrix;
-
-  // Debug
-  {
-//    float viewportspaceOffsetX = tanf(theta) * viewportOffsetX * worldspaceUnitY;
-//    float viewportspaceOffsetY = sinf(theta) * viewportOffsetY * worldspaceUnitY;
-
-    // This is view space
-//    MTransformationMatrix xform(MMatrix::identity);
-//    xform.setTranslation(MPoint(viewportOffsetX, viewportOffsetY, 0), MSpace::kWorld);
-//    MMatrix viewspaceOffsetMatrix = xform.asMatrix();
-//    data->m_matrix  = viewspaceOffsetMatrix * data->m_matrix;
-
-//    MTransformationMatrix bt(viewspaceOffsetMatrix);
-//    MPoint blahPos(bt.getTranslation(MSpace::kWorld));
-
-//    MStatus status;
-//    MFnNumericData pointData;
-//    MObject pointObj = pointData.create(MFnNumericData::Type::k3Float, &status);
-//    CHECK_MSTATUS(status);
-//    status = pointData.setData(float(blahPos.x), float(blahPos.y), float(blahPos.z));
-//    CHECK_MSTATUS(status);
-//    CHECK_MSTATUS(MFnDependencyNode(pickerObj).findPlug("outPosition").setValue(pointObj));
-  }
-
-//  TNC_DEBUG << "viewport=(" << viewport.width << ", " << viewport.height << ")";
-
-  {
-    float inViewportX, inViewportY;
-    MFnNumericData inNumData(MPlug(pickerObj, pickerCls.attribute("inViewport")).asMObject());
-    CHECK_MSTATUS(inNumData.getData(inViewportX, inViewportY));
-
-    const MPoint pt = computeViewportToWorld(frameContext, inViewportX, inViewportY, depth);
-
-    MFnNumericData outNumData;
-    outNumData.create(MFnNumericData::Type::k4Double);
-    outNumData.setData(pt.x, pt.y, pt.z, pt.w);
-    MObject outViewportObj = outNumData.object();
-    CHECK_MSTATUS(MFnDependencyNode(pickerObj).findPlug("outViewport").setValue(outViewportObj));
-
-    // Debug
-    MFnMatrixData matrixData;
-    MObject matrixObj = matrixData.create(data->m_matrix);
-    MFnDependencyNode(pickerDag.node()).findPlug("outMatrix").setValue(matrixObj);
-  }
-
 }
 
 void prepareGeometry(const MDagPath& pickerDag,
@@ -384,8 +317,6 @@ void prepareStyle(const MDagPath& pickerDag,
   data->m_style = style;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-
 MPxDrawOverride* PickerDrawOverride::creator(const MObject& obj)
 {
   return new PickerDrawOverride(obj);
@@ -424,12 +355,6 @@ MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& pickerDag,
   prepareMatrix(pickerDag, cameraDag, frameContext, data);
   prepareGeometry(pickerDag, cameraDag, frameContext, data);
   prepareStyle(pickerDag, cameraDag, frameContext, data);
-
-//
-//
-//  const MNodeClass pickerCls(PickerShape::id);
-//  const MObject pickerObj(pickerDag.node());
-//  const MPlug cameraPlug(pickerObj, pickerCls.attribute("camera"));
 
   return data;
 }
