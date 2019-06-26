@@ -1,6 +1,7 @@
 #include "PickerDrawOverride.hh"
 #include "PickerShape.hh"
 #include "PickerUI.hh"
+#include "PickerCommand.hh"
 #include "Log.hh"
 
 #include <maya/MGlobal.h>
@@ -41,6 +42,11 @@ MStatus initializePlugin(MObject obj) {
       PickerDrawOverride::creator);
   CHECK_MSTATUS(status);
 
+  status = plugin.registerCommand(CreatePickerCommand::typeName,
+                                  CreatePickerCommand::creator,
+                                  CreatePickerCommand::createSyntax);
+  CHECK_MSTATUS(status);
+
   TNC_DEBUG << "Start plugin";
 //  MGlobal::executeCommandOnIdle(AEpickerTemplate);
   TNC_DEBUG << "Done!";
@@ -51,5 +57,9 @@ MStatus uninitializePlugin(MObject obj) {
   MFnPlugin plugin(obj);
   TNC_DEBUG << "Finish plugin";
   MStatus status;
+
+  status = plugin.deregisterCommand("attachPicker");
+  CHECK_MSTATUS(status);
+
   return status;
 }

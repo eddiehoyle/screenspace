@@ -6,6 +6,8 @@ set(SS_SOURCE_FILES
         PickerShape.hh
         PickerUI.cc
         PickerUI.hh
+        PickerCommand.cc
+        PickerCommand.hh
         Log.hh
         Log.cc
         Plugin.cc

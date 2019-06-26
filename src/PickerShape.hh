@@ -29,7 +29,7 @@ private:
   static MObject m_height;
 
   static MObject m_depth;
-  static MObject m_layout;
+  static MObject m_position;
   static MObject m_verticalAlign;
   static MObject m_horizontalAlign;
 

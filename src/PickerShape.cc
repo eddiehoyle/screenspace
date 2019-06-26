@@ -1,4 +1,5 @@
 #include "PickerShape.hh"
+#include "Types.hh"
 #include "Log.hh"
 
 #include <maya/MFnTypedAttribute.h>
@@ -34,7 +35,7 @@ MObject PickerShape::m_width;
 MObject PickerShape::m_height;
 
 MObject PickerShape::m_depth;
-MObject PickerShape::m_layout;
+MObject PickerShape::m_position;
 MObject PickerShape::m_verticalAlign;
 MObject PickerShape::m_horizontalAlign;
 MObject PickerShape::m_offsetX;
@@ -58,8 +59,8 @@ MStatus PickerShape::initialize() {
 
   m_shape = eAttr.create("shape", "dsh", 0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(eAttr.addField("Circle", 0));
-  CHECK_MSTATUS(eAttr.addField("Rectangle", 1));
+  CHECK_MSTATUS(eAttr.addField("Circle", static_cast<short>(Shape::Circle)));
+  CHECK_MSTATUS(eAttr.addField("Rectangle", static_cast<short>(Shape::Rectangle)));
   CHECK_MSTATUS(eAttr.setKeyable(true));
   CHECK_MSTATUS(eAttr.setCached(true));
   CHECK_MSTATUS(eAttr.setStorable(true));
@@ -151,10 +152,10 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_layout = eAttr.create("layout", "lay", 0, &status);
+  m_position = eAttr.create("position", "lay", 0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(eAttr.addField("Relative", 0));
-  CHECK_MSTATUS(eAttr.addField("Absolute", 1));
+  CHECK_MSTATUS(eAttr.addField("Relative", static_cast<short>(Position::Relative)));
+  CHECK_MSTATUS(eAttr.addField("Absolute", static_cast<short>(Position::Absolute)));
   CHECK_MSTATUS(eAttr.setKeyable(true));
   CHECK_MSTATUS(eAttr.setStorable(true));
   CHECK_MSTATUS(eAttr.setWritable(true));
@@ -162,15 +163,15 @@ MStatus PickerShape::initialize() {
 
   m_verticalAlign = eAttr.create("verticalAlign", "val", 0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(eAttr.addField("Bottom", 0));
-  CHECK_MSTATUS(eAttr.addField("Center", 1));
-  CHECK_MSTATUS(eAttr.addField("Top", 2));
+  CHECK_MSTATUS(eAttr.addField("Bottom", static_cast<short>(VerticalAlign::Bottom)));
+  CHECK_MSTATUS(eAttr.addField("Middle", static_cast<short>(VerticalAlign::Middle)));
+  CHECK_MSTATUS(eAttr.addField("Top", static_cast<short>(VerticalAlign::Top)));
 
   m_horizontalAlign = eAttr.create("horizontalAlign", "hal", 0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(eAttr.addField("Left", 0));
-  CHECK_MSTATUS(eAttr.addField("Center", 1));
-  CHECK_MSTATUS(eAttr.addField("Right", 2));
+  CHECK_MSTATUS(eAttr.addField("Left", static_cast<short>(HorizontalAlign::Left)));
+  CHECK_MSTATUS(eAttr.addField("Middle", static_cast<short>(HorizontalAlign::Middle)));
+  CHECK_MSTATUS(eAttr.addField("Right", static_cast<short>(HorizontalAlign::Right)));
 
   m_offsetX = nAttr.create("offsetX", "ofsx", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
@@ -207,7 +208,7 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(addAttribute(m_height));
 
   CHECK_MSTATUS(addAttribute(m_depth));
-  CHECK_MSTATUS(addAttribute(m_layout));
+  CHECK_MSTATUS(addAttribute(m_position));
   CHECK_MSTATUS(addAttribute(m_verticalAlign));
   CHECK_MSTATUS(addAttribute(m_horizontalAlign));
   CHECK_MSTATUS(addAttribute(m_offset));

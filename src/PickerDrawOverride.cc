@@ -1,5 +1,6 @@
 #include "PickerDrawOverride.hh"
 #include "PickerShape.hh"
+#include "Types.hh"
 #include "Log.hh"
 
 #include <maya/MBoundingBox.h>
@@ -40,28 +41,6 @@ namespace screenspace {
 
 MString PickerDrawOverride::classifcation = "drawdb/geometry/screenspace/picker";
 MString PickerDrawOverride::id = "picker";
-
-enum class Shape {
-  Circle,
-  Rectangle,
-};
-
-enum class Layout {
-  Relative,
-  Absolute,
-};
-
-enum class VerticalAlign {
-  Bottom,
-  Center,
-  Top,
-};
-
-enum class HorizontalAlign {
-  Left,
-  Center,
-  Right,
-};
 
 struct Viewport {
   int width;
@@ -104,7 +83,9 @@ MPoint computeViewportToWorld(const MFrameContext& context,
   MPoint near, far;
   context.viewportToWorld(x, y, near, far);
 
-  // TODO: Improve this
+  // TODO:
+  // Make this to be close to the nearClipPlane
+  // than arbitrary 0.1f vale.
   float scalar = 0.1f * (depth + 1);
 
   MVector direction = (far - near);
@@ -130,8 +111,6 @@ public:
   Geometry m_geometry;
   Style m_style;
 };
-
-// ---------------------------------------------------------------------------------------------------------------------
 
 void prepareMatrix(const MDagPath& pickerDag,
                    const MDagPath& cameraDag,
@@ -163,22 +142,22 @@ void prepareMatrix(const MDagPath& pickerDag,
   viewport.worldspaceHeight = worldspaceHeight;
   data->m_viewport = viewport;
 
-  short _layout;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("layout")).getValue(_layout));
-  Layout layout = static_cast<Layout>(_layout);
+  short _position;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("position")).getValue(_position));
+  Position position = static_cast<Position>(_position);
 
   // Viewport scale factor
   float worldspaceUnitX, worldspaceUnitY;
   float viewportUnitX, viewportUnitY;
-  switch (layout)
+  switch (position)
   {
-    case Layout::Relative:
+    case Position::Relative:
       worldspaceUnitX = viewport.worldspaceWidth / 100.0f;
       worldspaceUnitY = viewport.worldspaceHeight / 100.0f;
       viewportUnitX = viewport.width / 100.0f;
       viewportUnitY = viewport.height / 100.0f;
       break;
-    case Layout::Absolute:
+    case Position::Absolute:
       worldspaceUnitX = viewport.worldspaceWidth / viewport.width;
       worldspaceUnitY = viewport.worldspaceHeight / viewport.height;
       viewportUnitX = 1.0f;
@@ -200,7 +179,7 @@ void prepareMatrix(const MDagPath& pickerDag,
     case HorizontalAlign::Left:
       alignOffsetX = 0.0f;
       break;
-    case HorizontalAlign::Center:
+    case HorizontalAlign::Middle:
       alignOffsetX = viewport.width / 2.0f;
       break;
     case HorizontalAlign::Right:
@@ -214,7 +193,7 @@ void prepareMatrix(const MDagPath& pickerDag,
     case VerticalAlign::Bottom:
       alignOffsetY = 0.0f;
       break;
-    case VerticalAlign::Center:
+    case VerticalAlign::Middle:
       alignOffsetY = viewport.height / 2.0f;
       break;
     case VerticalAlign::Top:
@@ -222,7 +201,7 @@ void prepareMatrix(const MDagPath& pickerDag,
       break;
   }
 
-  // Offset
+  // Fetch offset
   float viewportOffsetX, viewportOffsetY;
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetX")).getValue(viewportOffsetX));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetY")).getValue(viewportOffsetY));
@@ -237,10 +216,10 @@ void prepareMatrix(const MDagPath& pickerDag,
   MVector ray = viewportOffset - rayOrigin;
   ray.normalize();
   MVector normal = MVector(viewMatrix(2, 0), viewMatrix(2, 1), viewMatrix(2, 2));
-  MPoint position;
-  linePlaneIntersection(ray, rayOrigin, normal, nearBL, position);
+  MPoint origin;
+  linePlaneIntersection(ray, rayOrigin, normal, nearBL, origin);
 
-  // Fetch data
+  // Fetch geometry
   float size, width, height;
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("size")).getValue(size));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("width")).getValue(width));
@@ -254,7 +233,7 @@ void prepareMatrix(const MDagPath& pickerDag,
   // Translate
   {
     MTransformationMatrix xform(MMatrix::identity);
-    xform.setTranslation(position, MSpace::kWorld);
+    xform.setTranslation(origin, MSpace::kWorld);
     screenspaceTranslateMatrix = xform.asMatrix();
   }
 
@@ -270,7 +249,8 @@ void prepareMatrix(const MDagPath& pickerDag,
     screenspaceScaleMatrix = xform.asMatrix();
   }
 
-  data->m_matrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix * pickerDag.inclusiveMatrixInverse();
+  MMatrix screenWorldMatrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix;
+  data->m_matrix = screenWorldMatrix * pickerDag.inclusiveMatrixInverse();
 }
 
 void prepareGeometry(const MDagPath& pickerDag,
@@ -285,7 +265,6 @@ void prepareGeometry(const MDagPath& pickerDag,
   MFnNumericData colorData(MPlug(pickerObj, pickerCls.attribute("color")).asMObject());
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
-
 
   float _vertices[4][4] = {{0.0, 0.0, 0.0, 1.0},
                            {1.0, 0.0, 0.0, 1.0},
@@ -315,7 +294,6 @@ void prepareGeometry(const MDagPath& pickerDag,
   for (std::size_t i = 0; i < geometry.vertices.length(); ++i)
     geometry.vertices[i] = data->m_matrix.transpose() * geometry.vertices[i];
 
-  // Store
   data->m_geometry = geometry;
 }
 
