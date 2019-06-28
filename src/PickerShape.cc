@@ -23,39 +23,38 @@ namespace screenspace {
 MString PickerShape::typeName = "picker";
 MTypeId PickerShape::id(0x8701F);
 
+MObject PickerShape::m_camera;
 MObject PickerShape::m_shape;
 MObject PickerShape::m_color;
 MObject PickerShape::m_opacity;
-MObject PickerShape::m_fill;
-MObject PickerShape::m_lineWidth;
-MObject PickerShape::m_lineStyle;
-
 MObject PickerShape::m_size;
 MObject PickerShape::m_width;
 MObject PickerShape::m_height;
-
 MObject PickerShape::m_depth;
 MObject PickerShape::m_position;
-MObject PickerShape::m_verticalAlign;
 MObject PickerShape::m_horizontalAlign;
+MObject PickerShape::m_verticalAlign;
 MObject PickerShape::m_offsetX;
 MObject PickerShape::m_offsetY;
 MObject PickerShape::m_offset;
-
-MObject PickerShape::m_camera;
 
 void* PickerShape::creator() {
   return new PickerShape();
 }
 
 MStatus PickerShape::initialize() {
-  MObject obj;
+
   MStatus status;
 
   MFnTypedAttribute tAttr;
   MFnNumericAttribute nAttr;
   MFnEnumAttribute eAttr;
   MFnMessageAttribute mAttr;
+
+  m_camera = mAttr.create("camera", "cam", &status);
+  CHECK_MSTATUS(status);
+  CHECK_MSTATUS(mAttr.setWritable(true));
+  CHECK_MSTATUS(mAttr.setReadable(false));
 
   m_shape = eAttr.create("shape", "dsh", 0, &status);
   CHECK_MSTATUS(status);
@@ -83,35 +82,6 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setStorable(true));
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
-
-  m_fill = nAttr.create("fill", "fl", MFnNumericData::kBoolean, true, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setKeyable(true));
-  CHECK_MSTATUS(nAttr.setStorable(true));
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setCached(true));
-
-  m_lineWidth = nAttr.create("lineWidth", "lw", MFnNumericData::kFloat, 1.0, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setMin(0.01));
-  CHECK_MSTATUS(nAttr.setSoftMin(1.0));
-  CHECK_MSTATUS(nAttr.setSoftMax(10.0));
-  CHECK_MSTATUS(nAttr.setKeyable(true));
-  CHECK_MSTATUS(nAttr.setStorable(true));
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setCached(true));
-
-  m_lineStyle = eAttr.create("lineStyle", "ls", 0, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(eAttr.addField("Solid", 0));
-  CHECK_MSTATUS(eAttr.addField("Short Dotted", 1));
-  CHECK_MSTATUS(eAttr.addField("Short Dashed", 2));
-  CHECK_MSTATUS(eAttr.addField("Dashed", 3));
-  CHECK_MSTATUS(eAttr.addField("Dotted", 4));
-  CHECK_MSTATUS(eAttr.setKeyable(true));
-  CHECK_MSTATUS(eAttr.setStorable(true));
-  CHECK_MSTATUS(eAttr.setWritable(true));
-  CHECK_MSTATUS(eAttr.setCached(true));
 
   m_size = nAttr.create("size", "sz", MFnNumericData::kFloat, 1.0, &status);
   CHECK_MSTATUS(status);
@@ -143,16 +113,16 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_depth = nAttr.create("depth", "d", MFnNumericData::kInt, 1, &status);
+  m_depth = nAttr.create("depth", "d", MFnNumericData::kInt, 0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setMin(1));
+  CHECK_MSTATUS(nAttr.setMin(0));
   CHECK_MSTATUS(nAttr.setSoftMax(32));
   CHECK_MSTATUS(nAttr.setKeyable(true));
   CHECK_MSTATUS(nAttr.setStorable(true));
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_position = eAttr.create("position", "lay", 0, &status);
+  m_position = eAttr.create("position", "pos", 0, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(eAttr.addField("Relative", static_cast<short>(Position::Relative)));
   CHECK_MSTATUS(eAttr.addField("Absolute", static_cast<short>(Position::Absolute)));
@@ -161,17 +131,17 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(eAttr.setWritable(true));
   CHECK_MSTATUS(eAttr.setCached(true));
 
-  m_verticalAlign = eAttr.create("verticalAlign", "val", 0, &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(eAttr.addField("Bottom", static_cast<short>(VerticalAlign::Bottom)));
-  CHECK_MSTATUS(eAttr.addField("Middle", static_cast<short>(VerticalAlign::Middle)));
-  CHECK_MSTATUS(eAttr.addField("Top", static_cast<short>(VerticalAlign::Top)));
-
   m_horizontalAlign = eAttr.create("horizontalAlign", "hal", 0, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(eAttr.addField("Left", static_cast<short>(HorizontalAlign::Left)));
   CHECK_MSTATUS(eAttr.addField("Middle", static_cast<short>(HorizontalAlign::Middle)));
   CHECK_MSTATUS(eAttr.addField("Right", static_cast<short>(HorizontalAlign::Right)));
+
+  m_verticalAlign = eAttr.create("verticalAlign", "val", 0, &status);
+  CHECK_MSTATUS(status);
+  CHECK_MSTATUS(eAttr.addField("Bottom", static_cast<short>(VerticalAlign::Bottom)));
+  CHECK_MSTATUS(eAttr.addField("Middle", static_cast<short>(VerticalAlign::Middle)));
+  CHECK_MSTATUS(eAttr.addField("Top", static_cast<short>(VerticalAlign::Top)));
 
   m_offsetX = nAttr.create("offsetX", "ofsx", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
@@ -191,29 +161,18 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_camera = mAttr.create("camera", "cam", &status);
-  CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setWritable(true));
-  CHECK_MSTATUS(nAttr.setReadable(false));
-
+  CHECK_MSTATUS(addAttribute(m_camera));
   CHECK_MSTATUS(addAttribute(m_shape));
   CHECK_MSTATUS(addAttribute(m_color));
   CHECK_MSTATUS(addAttribute(m_opacity));
-  CHECK_MSTATUS(addAttribute(m_fill));
-  CHECK_MSTATUS(addAttribute(m_lineWidth));
-  CHECK_MSTATUS(addAttribute(m_lineStyle));
-
   CHECK_MSTATUS(addAttribute(m_size));
   CHECK_MSTATUS(addAttribute(m_width));
   CHECK_MSTATUS(addAttribute(m_height));
-
   CHECK_MSTATUS(addAttribute(m_depth));
   CHECK_MSTATUS(addAttribute(m_position));
-  CHECK_MSTATUS(addAttribute(m_verticalAlign));
   CHECK_MSTATUS(addAttribute(m_horizontalAlign));
+  CHECK_MSTATUS(addAttribute(m_verticalAlign));
   CHECK_MSTATUS(addAttribute(m_offset));
-
-  CHECK_MSTATUS(addAttribute(m_camera));
 
   return MStatus::kSuccess;
 }

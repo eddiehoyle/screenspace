@@ -60,9 +60,6 @@ struct Geometry {
 struct Style {
   Shape shape;
   MColor color;
-  bool fill;
-  float lineWidth;
-  MUIDrawManager::LineStyle lineStyle;
 };
 
 bool linePlaneIntersection(const MVector& ray, const MVector& origin,
@@ -314,20 +311,9 @@ void prepareStyle(const MDagPath& pickerDag,
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
 
-  float fill, lineWidth;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("fill")).getValue(fill));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("lineWidth")).getValue(lineWidth));
-
-  short _lineStyle;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("lineStyle")).getValue(_lineStyle));
-  MUIDrawManager::LineStyle lineStyle = static_cast<MUIDrawManager::LineStyle>(_lineStyle);
-
   Style style;
   style.shape = drawShape;
   style.color = color;
-  style.fill = fill;
-  style.lineStyle = lineStyle;
-  style.lineWidth = lineWidth;
   data->m_style = style;
 }
 
@@ -389,8 +375,6 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
   drawManager.setColor(style.color);
-  drawManager.setLineWidth(style.lineWidth);
-  drawManager.setLineStyle(style.lineStyle);
   drawManager.mesh(MUIDrawManager::Primitive::kTriangles,
                    geometry.vertices,
                    &geometry.normals,

@@ -1,6 +1,5 @@
 #include "PickerDrawOverride.hh"
 #include "PickerShape.hh"
-#include "PickerUI.hh"
 #include "PickerCommand.hh"
 #include "Log.hh"
 
@@ -14,9 +13,18 @@ static const MString AEpickerTemplate = R"(global proc AEpickerTemplate(string $
 {
   editorTemplate -beginScrollLayout;
   editorTemplate -beginLayout "Geometry" -collapse 0;
-    editorTemplate -addControl "size";
-    editorTemplate -addControl "width";
-    editorTemplate -addControl "height";
+  editorTemplate -addControl -label "Shape" "shape" "swapShape";
+  editorTemplate -addControl "size";
+  editorTemplate -addControl "width";
+  editorTemplate -addControl "height";
+  editorTemplate -addControl "color";
+  editorTemplate -addControl "opacity";
+  editorTemplate -addSeparator;
+  editorTemplate -addControl "position";
+  editorTemplate -addControl "offset";
+  editorTemplate -addControl "verticalAlign";
+  editorTemplate -addControl "horizontalAlign";
+  editorTemplate -addControl "depth";
   editorTemplate -endLayout;
   editorTemplate -addExtraControls;
   editorTemplate -endScrollLayout;
@@ -26,14 +34,12 @@ MStatus initializePlugin(MObject obj) {
   MFnPlugin plugin(obj, "Eddie Hoyle", "1.0", "Any");
 
   MStatus status;
-
   status = plugin.registerNode(PickerShape::typeName,
                                PickerShape::id,
                                &PickerShape::creator,
                                &PickerShape::initialize,
                                MPxNode::kLocatorNode,
                                &PickerDrawOverride::classifcation);
-
   CHECK_MSTATUS(status);
 
   status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
@@ -47,18 +53,18 @@ MStatus initializePlugin(MObject obj) {
                                   CreatePickerCommand::createSyntax);
   CHECK_MSTATUS(status);
 
-  TNC_DEBUG << "Start plugin";
 //  MGlobal::executeCommandOnIdle(AEpickerTemplate);
-  TNC_DEBUG << "Done!";
   return status;
 }
 
 MStatus uninitializePlugin(MObject obj) {
   MFnPlugin plugin(obj);
-  TNC_DEBUG << "Finish plugin";
   MStatus status;
 
-  status = plugin.deregisterCommand("attachPicker");
+  status = plugin.deregisterNode(PickerShape::id);
+  CHECK_MSTATUS(status);
+
+  status = plugin.deregisterCommand(CreatePickerCommand::typeName);
   CHECK_MSTATUS(status);
 
   return status;

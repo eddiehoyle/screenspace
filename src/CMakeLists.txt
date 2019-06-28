@@ -4,18 +4,12 @@ set(SS_SOURCE_FILES
         PickerDrawOverride.hh
         PickerShape.cc
         PickerShape.hh
-        PickerUI.cc
-        PickerUI.hh
         PickerCommand.cc
         PickerCommand.hh
         Log.hh
         Log.cc
         Plugin.cc
         )
-
-#set(SS_SOURCE_FILES
-#        Example.cc
-#        )
 
 add_library(${SS_LIBRARY} SHARED ${SS_SOURCE_FILES})
 target_include_directories(${SS_LIBRARY} PRIVATE ${OPENGL_INCLUDE_DIRS} ${MAYA_INCLUDE_DIR})

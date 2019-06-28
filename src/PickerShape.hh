@@ -12,32 +12,21 @@ public:
   static void* creator();
   static MStatus initialize();
 
-public:
-  PickerShape() = default;
-  virtual ~PickerShape() = default;
-
 private:
+  static MObject m_camera;
   static MObject m_shape;
   static MObject m_color;
   static MObject m_opacity;
-  static MObject m_fill;
-  static MObject m_lineWidth;
-  static MObject m_lineStyle;
-
   static MObject m_size;
   static MObject m_width;
   static MObject m_height;
-
   static MObject m_depth;
   static MObject m_position;
-  static MObject m_verticalAlign;
   static MObject m_horizontalAlign;
-
+  static MObject m_verticalAlign;
   static MObject m_offsetX;
   static MObject m_offsetY;
   static MObject m_offset;
-
-  static MObject m_camera;
 };
 
 }

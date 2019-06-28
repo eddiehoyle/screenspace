@@ -17,22 +17,18 @@ global proc AEpickerTemplate(string $nodeName)
 {
   editorTemplate -beginScrollLayout;
   editorTemplate -beginLayout "Geometry" -collapse 0;
-  editorTemplate -addControl "color";
-  editorTemplate -addControl "opacity";
-  editorTemplate -addControl "fill";
   editorTemplate -addControl -label "Shape" "shape" "swapShape";
-  editorTemplate -addControl -label "Line Width" "lineWidth";
-  editorTemplate -addControl -label "Line Style" "lineStyle";
-  editorTemplate -addSeparator;
   editorTemplate -addControl "size";
   editorTemplate -addControl "width";
   editorTemplate -addControl "height";
-  editorTemplate -addControl "offset";
+  editorTemplate -addControl "color";
+  editorTemplate -addControl "opacity";
   editorTemplate -addSeparator;
-  editorTemplate -addControl "depth";
-  editorTemplate -addControl "layout";
+  editorTemplate -addControl "position";
+  editorTemplate -addControl "offset";
   editorTemplate -addControl "verticalAlign";
   editorTemplate -addControl "horizontalAlign";
+  editorTemplate -addControl "depth";
   editorTemplate -endLayout;
   editorTemplate -addExtraControls;
   editorTemplate -endScrollLayout;
