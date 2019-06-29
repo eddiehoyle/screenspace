@@ -3,38 +3,15 @@
 #include "Types.hh"
 #include "Log.hh"
 
-#include <maya/MBoundingBox.h>
-#include <maya/MUserData.h>
-#include <maya/MPxNode.h>
-#include <maya/MColor.h>
-#include <maya/MDagPath.h>
-#include <maya/MFnDagNode.h>
-#include <maya/MGlobal.h>
-#include <maya/MNodeClass.h>
-#include <maya/MObject.h>
-#include <maya/MPoint.h>
-#include <maya/MVector.h>
-#include <maya/MStringArray.h>
-#include <maya/MFrameContext.h>
-#include <maya/MFnPluginData.h>
-#include <maya/MGeometryRequirements.h>
-#include <maya/MHWGeometry.h>
-#include <maya/MHWGeometryUtilities.h>
-#include <maya/MPxGeometryOverride.h>
-#include <maya/MShaderManager.h>
-#include <maya/MSelectionContext.h>
-#include <maya/MUIDrawManager.h>
 #include <maya/MPlug.h>
-#include <maya/MFnTransform.h>
-#include <maya/MVectorArray.h>
-#include <maya/MFnMatrixData.h>
-#include <maya/MColorArray.h>
-#include <maya/MTransformationMatrix.h>
-#include <maya/MQuaternion.h>
-
-#include <vector>
-#include <cmath>
 #include <maya/MPlugArray.h>
+#include <maya/MNodeClass.h>
+#include <maya/MColorArray.h>
+#include <maya/MPointArray.h>
+#include <maya/MUintArray.h>
+#include <maya/MVectorArray.h>
+
+#include <cmath>
 
 
 namespace screenspace {
@@ -263,29 +240,65 @@ void prepareGeometry(const MDagPath& pickerDag,
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
 
-  float _vertices[4][4] = {{0.0, 0.0, 0.0, 1.0},
-                           {1.0, 0.0, 0.0, 1.0},
-                           {1.0, 1.0, 0.0, 1.0},
-                           {0.0, 1.0, 0.0, 1.0}};
-
-  float _normals[4][3] = {{0.0, 0.0, 1.0},
-                          {0.0, 0.0, 1.0},
-                          {0.0, 0.0, 1.0},
-                          {0.0, 0.0, 1.0}};
-
-  float _colors[4][4] = {{color.r, color.g, color.b, color.a},
-                         {color.r, color.g, color.b, color.a},
-                         {color.r, color.g, color.b, color.a},
-                         {color.r, color.g, color.b, color.a}};
-
-  unsigned int _indices[6] = {0, 1, 2, 0, 2, 3};
+  short _shape;
+  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("shape")).getValue(_shape));
+  Shape shape = static_cast<Shape>(_shape);
 
   Geometry geometry;
-  geometry.primitive = MUIDrawManager::Primitive::kTriangles;
-  geometry.vertices = MPointArray(_vertices, 4);
-  geometry.normals = MVectorArray(_normals, 4);
-  geometry.colors = MColorArray(_colors, 4);
-  geometry.indices = MUintArray(_indices, 6);
+
+  switch(shape)
+  {
+    case Shape::Circle:
+    {
+      geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+
+      const std::size_t num = 16;
+      float increment = 2.0 * M_PI / float(num);
+
+      // Center
+      geometry.vertices.append(MPoint(0.0f, 0.0f, 0.0f, 1.0f));
+      geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
+      geometry.colors.append(color);
+
+      // Outside
+      for (std::size_t i = 0; i <= num; ++i) {
+        float angle = increment * i;
+        geometry.vertices.append(MPoint(cosf(angle), sinf(angle), 0.0f, 1.0f));
+        geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
+        geometry.colors.append(color);
+      }
+
+      // Indices
+      for (std::size_t i = 0; i < num; ++i) {
+        geometry.indices.append(0);
+        geometry.indices.append(i);
+        geometry.indices.append(i + 1);
+      }
+      geometry.indices.append(0);
+      geometry.indices.append(num);
+      geometry.indices.append(1);
+      break;
+    }
+    case Shape::Rectangle:
+    {
+      geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+
+      geometry.vertices.append(MPoint(0.0, 0.0, 0.0, 1.0));
+      geometry.vertices.append(MPoint(1.0, 0.0, 0.0, 1.0));
+      geometry.vertices.append(MPoint(1.0, 1.0, 0.0, 1.0));
+      geometry.vertices.append(MPoint(0.0, 1.0, 0.0, 1.0));
+
+      for (std::size_t i = 0; i < 4; ++i) {
+        geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
+        geometry.colors.append(color);
+      }
+
+      for (unsigned int index: {0, 1, 2, 0, 2, 3})
+        geometry.indices.append(index);
+
+      break;
+    }
+  }
 
   // Apply transformation
   for (std::size_t i = 0; i < geometry.vertices.length(); ++i)
@@ -302,17 +315,12 @@ void prepareStyle(const MDagPath& pickerDag,
   const MNodeClass pickerCls(PickerShape::id);
   const MObject pickerObj(pickerDag.node());
 
-  short _shape;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("shape")).getValue(_shape));
-  Shape drawShape = static_cast<Shape>(_shape);
-
   MColor color;
   MFnNumericData colorData(MPlug(pickerObj, pickerCls.attribute("color")).asMObject());
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
   CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
 
   Style style;
-  style.shape = drawShape;
   style.color = color;
   data->m_style = style;
 }

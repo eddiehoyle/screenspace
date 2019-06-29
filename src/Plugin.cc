@@ -38,7 +38,7 @@ MStatus initializePlugin(MObject obj) {
                                PickerShape::id,
                                &PickerShape::creator,
                                &PickerShape::initialize,
-                               MPxNode::kLocatorNode,
+                               MPxNode::kSurfaceShape,
                                &PickerDrawOverride::classifcation);
   CHECK_MSTATUS(status);
 

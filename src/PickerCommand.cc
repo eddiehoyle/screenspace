@@ -3,12 +3,12 @@
 #include "Types.hh"
 #include "Log.hh"
 
+#include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
 #include <maya/MDagPath.h>
-#include <maya/MDagModifier.h>
-#include <maya/MDGModifier.h>
-#include <maya/MNodeClass.h>
 #include <maya/MSelectionList.h>
+#include <maya/MDagModifier.h>
+#include <maya/MNodeClass.h>
 
 namespace screenspace {
 

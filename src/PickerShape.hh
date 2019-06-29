@@ -1,16 +1,22 @@
-#include <maya/MPxLocatorNode.h>
-#include <maya/MPointArray.h>
-#include <maya/MSelectionMask.h>
+#ifndef SAMPLEPLUGIN_PICKERSHAPE_HH
+#define SAMPLEPLUGIN_PICKERSHAPE_HH
+
+#include <maya/MPxSurfaceShape.h>
 
 namespace screenspace {
 
-class PickerShape : public MPxLocatorNode {
-
+class PickerShape : public MPxSurfaceShape {
 public:
   static MTypeId id;
   static MString typeName;
   static void* creator();
   static MStatus initialize();
+
+public:
+  MSelectionMask getShapeSelectionMask() const override
+  {
+    return MSelectionMask::kSelectHandles;
+  }
 
 private:
   static MObject m_camera;
@@ -30,3 +36,5 @@ private:
 };
 
 }
+
+#endif // SAMPLEPLUGIN_PICKERSHAPE_HH

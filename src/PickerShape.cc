@@ -4,19 +4,8 @@
 
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
-#include <maya/MFnStringData.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnMessageAttribute.h>
-#include <maya/MFnMatrixAttribute.h>
-#include <maya/MFnPluginData.h>
-#include <maya/MPlugArray.h>
-#include <maya/MViewport2Renderer.h>
-#include <maya/MFnPointArrayData.h>
-#include <maya/MFnIntArrayData.h>
-#include <maya/MFnMesh.h>
-#include <maya/MFloatPointArray.h>
-#include <maya/MFnMeshData.h>
-#include <maya/MBoundingBox.h>
 
 namespace screenspace {
 
@@ -56,7 +45,7 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(mAttr.setWritable(true));
   CHECK_MSTATUS(mAttr.setReadable(false));
 
-  m_shape = eAttr.create("shape", "dsh", 0, &status);
+  m_shape = eAttr.create("shape", "shp", static_cast<short>(Shape::Rectangle), &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(eAttr.addField("Circle", static_cast<short>(Shape::Circle)));
   CHECK_MSTATUS(eAttr.addField("Rectangle", static_cast<short>(Shape::Rectangle)));
@@ -74,7 +63,7 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_opacity = nAttr.create("opacity", "op", MFnNumericData::kFloat, 1.0f, &status);
+  m_opacity = nAttr.create("opacity", "opc", MFnNumericData::kFloat, 1.0f, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(nAttr.setMin(0.0f));
   CHECK_MSTATUS(nAttr.setMax(1.0f));
@@ -93,7 +82,7 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_width = nAttr.create("width", "w", MFnNumericData::kFloat, 1.0, &status);
+  m_width = nAttr.create("width", "w", MFnNumericData::kFloat, 10.0, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(nAttr.setMin(0.01));
   CHECK_MSTATUS(nAttr.setSoftMin(1.0));
@@ -103,7 +92,7 @@ MStatus PickerShape::initialize() {
   CHECK_MSTATUS(nAttr.setWritable(true));
   CHECK_MSTATUS(nAttr.setCached(true));
 
-  m_height = nAttr.create("height", "h", MFnNumericData::kFloat, 1.0, &status);
+  m_height = nAttr.create("height", "h", MFnNumericData::kFloat, 10.0, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(nAttr.setMin(0.01));
   CHECK_MSTATUS(nAttr.setSoftMin(1.0));
@@ -145,13 +134,13 @@ MStatus PickerShape::initialize() {
 
   m_offsetX = nAttr.create("offsetX", "ofsx", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setMin(-200.0f));
-  CHECK_MSTATUS(nAttr.setMax(200.0f));
+  CHECK_MSTATUS(nAttr.setMin(-1000.0f));
+  CHECK_MSTATUS(nAttr.setMax(1000.0f));
 
   m_offsetY = nAttr.create("offsetY", "ofsy", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
-  CHECK_MSTATUS(nAttr.setMin(-200.0f));
-  CHECK_MSTATUS(nAttr.setMax(200.0f));
+  CHECK_MSTATUS(nAttr.setSoftMin(-1000.0f));
+  CHECK_MSTATUS(nAttr.setSoftMax(1000.0f));
 
   m_offset = nAttr.create("offset", "ofs", m_offsetX, m_offsetY, MObject::kNullObj, &status);
   CHECK_MSTATUS(status);
