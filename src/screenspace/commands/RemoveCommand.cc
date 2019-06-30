@@ -1,8 +1,7 @@
-#include "RemoveCommand.hh"
-
-#include <screenspace/Log.hh>
-#include <screenspace/Types.hh>
-#include <screenspace/PickerShape.hh>
+#include "screenspace/commands/RemoveCommand.hh"
+#include "screenspace/Log.hh"
+#include "screenspace/Types.hh"
+#include "screenspace/PickerShape.hh"
 
 #include <maya/MGlobal.h>
 #include <maya/MArgParser.h>

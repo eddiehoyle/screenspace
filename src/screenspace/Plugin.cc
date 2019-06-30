@@ -1,8 +1,8 @@
-#include <screenspace/Log.hh>
-#include <screenspace/PickerShape.hh>
-#include <screenspace/PickerDrawOverride.hh>
-#include <screenspace/commands/AddCommand.hh>
-#include <screenspace/commands/RemoveCommand.hh>
+#include "screenspace/Log.hh"
+#include "screenspace/PickerShape.hh"
+#include "screenspace/PickerDrawOverride.hh"
+#include "screenspace/commands/AddCommand.hh"
+#include "screenspace/commands/RemoveCommand.hh"
 
 #include <maya/MGlobal.h>
 #include <maya/MFnPlugin.h>

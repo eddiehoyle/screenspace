@@ -1,7 +1,6 @@
 #include "PickerShape.hh"
-
-#include <screenspace/Log.hh>
-#include <screenspace/Types.hh>
+#include "screenspace/Log.hh"
+#include "screenspace/Types.hh"
 
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
