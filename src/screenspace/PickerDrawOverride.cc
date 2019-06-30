@@ -1,7 +1,8 @@
 #include "PickerDrawOverride.hh"
-#include "PickerShape.hh"
-#include "Types.hh"
-#include "Log.hh"
+
+#include <screenspace/Log.hh>
+#include <screenspace/Types.hh>
+#include <screenspace/PickerShape.hh>
 
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>

@@ -1,7 +1,8 @@
-#include "PickerCommand.hh"
-#include "PickerShape.hh"
-#include "Types.hh"
-#include "Log.hh"
+#include "AddCommand.hh"
+
+#include <screenspace/Log.hh>
+#include <screenspace/Types.hh>
+#include <screenspace/PickerShape.hh>
 
 #include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
@@ -30,13 +31,13 @@ static Flags kWidthFlags = {"-w", "-width"};
 static Flags kHeightFlags = {"-w", "-height"};
 static Flags kOffsetFlags = {"-o", "-offset"};
 
-MString CreatePickerCommand::typeName = "attachPicker";
+MString AddCommand::typeName = "addPicker";
 
-void* CreatePickerCommand::creator() {
-  return new CreatePickerCommand();
+void* AddCommand::creator() {
+  return new AddCommand();
 }
 
-MSyntax CreatePickerCommand::createSyntax() {
+MSyntax AddCommand::createSyntax() {
 
   MSyntax syntax;
   syntax.addFlag(kCameraFlags.first, kCameraFlags.second, MSyntax::kString);
@@ -58,7 +59,7 @@ MSyntax CreatePickerCommand::createSyntax() {
   return syntax;
 }
 
-MStatus CreatePickerCommand::doIt(const MArgList& args)
+MStatus AddCommand::doIt(const MArgList& args)
 {
 
   MStatus status;

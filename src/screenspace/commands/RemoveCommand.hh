@@ -1,12 +1,12 @@
-#ifndef SCREENSPACE_PICKERCOMMAND_HH
-#define SCREENSPACE_PICKERCOMMAND_HH
+#ifndef SCREENSPACE_REMOVECOMMAND_HH
+#define SCREENSPACE_REMOVECOMMAND_HH
 
 #include <maya/MPxCommand.h>
 #include <maya/MSyntax.h>
 
 namespace screenspace {
 
-class CreatePickerCommand : public MPxCommand {
+class RemoveCommand : public MPxCommand {
 public:
   static MString typeName;
   static void* creator();
@@ -16,4 +16,4 @@ public:
 };
 
 }
-#endif // SCREENSPACE_PICKERCOMMAND_HH
+#endif // SCREENSPACE_REMOVECOMMAND_HH
