@@ -6,7 +6,6 @@ A picker attachment plugin for Maya.
 1. [Demo](#demo)
 2. [How to use](#how-to-use)
 3. [Advanced](#advanced)
-4. [License](#license)
 
 # Demo
 
@@ -77,7 +76,7 @@ cmds.addPickable(help=True)
 
 ## Removing
 
-Screenspace also comes with a `removePickables` command. This command attempts to remove any pickables found under current selection.
+Screenspace also comes with a `removePickables` command. This command attempts to remove any pickables found under current selection or a specified transform.
 
 Mel
 ```mel
@@ -96,6 +95,3 @@ cmds.removePickables(selected=True)
 # Remove pickables from transform
 cmds.removePickables(parent="...")
 ```
-
-# License
-
