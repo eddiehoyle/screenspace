@@ -1,15 +1,5 @@
 # screenspace
-A picker attachment plugin for Maya.
-
-# Contents
-
-1. [Demo](#demo)
-2. [How to use](#how-to-use)
-3. [Advanced](#advanced)
-
-# Demo
-
-Screenspace allows you to attach pickable shapes to transforms while being displayed in viewport space.
+Screenspace is a Maya plugin that allows you to attach pickable shapes to transforms while being displayed in screen space.
 
 ![alt text](resources/screenspace1.png "Pickable")
 
@@ -21,15 +11,26 @@ Easily build your own pickable interfaces!
 
 ![alt text](resources/screenspace3.png "Interfaces")
 
+***Azri** rig courtesy of: https://www.gameanim.com/*
+
+# Contents
+1. [Installation](#installation)
+    1. [Building](#building)
+    2. [Plugin](#plugin)
+2. [How to use](#how-to-use)
+3. [Advanced](#advanced)
+
+# Installation
+
+## Building
+TODO
+
+## Plugin
+TODO
 # How to use
 
 ## Attaching
 Screenspace comes with a command to attach pickables to existing transforms.
-
-Mel
-```mel
-addPickable -parent "..." -camera "...";
-```
 
 Python
 ```python
@@ -37,12 +38,12 @@ from maya import cmds
 cmds.addPickable(parent="...", camera="...")
 ```
 
-The examples above feature the minimum required arguments to attach a pickable.
+The above example feature the minimum required arguments to attach a pickable.
 
-`parent`: The parent *transform* you wish to attach this pickable to.  
-`camera`: The camera *shape* you wish to attach this pickable to. The pickable will be visible only for viewports seen through this camera.   
+`parent`: The parent *transform* you'd like to attach this pickable to.  
+`camera`: Display this pickable on this camera's viewports.   
 
-Here's an example Python script of attaching a pickable to the perspective camera and a selected transform.
+An example Python script of attaching a pickable to the perspective camera and a selected transform.
 
 ```python
 from maya import cmds
@@ -53,21 +54,12 @@ cmds.addPickable(parent=selected, camera="perspShape")
 ```
 
 ## Editing
-
 TODO
-
 
 # Advanced
 
 ## Adding
-
 The `addPickable` command supports a bunch of extra options. Run the command with the `-help` flag to see more information.
-
-Mel
-
-```mel
-addPickable -help;
-```
 
 Python
 ```python
@@ -75,17 +67,7 @@ cmds.addPickable(help=True)
 ``` 
 
 ## Removing
-
 Screenspace also comes with a `removePickables` command. This command attempts to remove any pickables found under current selection or a specified transform.
-
-Mel
-```mel
-// Remove all pickables from selection
-removePickables -sl;
-
-// Remove pickables from transform
-removePickables -parent "...";
-```
 
 Python
 ```python
