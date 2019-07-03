@@ -9,7 +9,7 @@
 
 namespace screenspace {
 
-MString PickerShape::typeName = "picker";
+MString PickerShape::typeName = "pickable";
 MTypeId PickerShape::id(0x8701F);
 
 MObject PickerShape::m_camera;

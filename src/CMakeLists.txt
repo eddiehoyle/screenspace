@@ -20,4 +20,19 @@ target_compile_definitions(${SS_LIBRARY} PRIVATE TNC_LOGGING_ENABLED=1 OSMac_)
 target_link_libraries(${SS_LIBRARY} ${MAYA_LIBRARIES})
 MAYA_PLUGIN(${SS_LIBRARY})
 
+add_custom_command(
+        TARGET ${SS_LIBRARY} POST_BUILD
+        COMMENT "Copying icons..."
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_LIST_DIR}/screenspace/icons
+        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/icons)
 
+add_custom_command(
+        TARGET ${SS_LIBRARY} POST_BUILD
+        COMMENT "Copying scripts..."
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_LIST_DIR}/screenspace/scripts
+        ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/scripts)
+
+add_custom_command(TARGET ${SS_LIBRARY} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E cmake_echo_color --cyan "All done!")

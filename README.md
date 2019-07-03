@@ -1,13 +1,13 @@
 # screenspace
-Screenspace is a Maya plugin that allows you to attach pickable shapes to transforms while being displayed in screen space.
+Screenspace is a Maya plugin that allow pickable shapes to be added to transforms that display as if they were attached to the viewport. As you move the controls and tumble the camera, the pickables position will be maintained on screen.
 
 ![alt text](resources/screenspace1.png "Pickable")
 
-Pickables can be styled and offset to your taste.
+Pickables can be styled and offset to your taste. Attributes include as color, width, height, and vertical and horizontal alignment to name a few.
 
 ![alt text](resources/screenspace2.png "Style")
 
-Easily build your own pickable interfaces!
+Attach to any rig!
 
 ![alt text](resources/screenspace3.png "Interfaces")
 
@@ -23,7 +23,29 @@ Easily build your own pickable interfaces!
 # Installation
 
 ## Building
-TODO
+You'll need [CMake 3.12+](https://cmake.org), git, and Maya to build from source.
+
+Run the following commands in a shell.
+```bash
+git clone git@github.com:eddiehoyle/screenspace.git
+cd screenspace
+mkdir build
+cd build
+cmake ..
+make
+```
+
+Once built, the library will can be found in the `plugin/` directory. Copy this file somewhere safe. It's now safe to 
+
+```bash
+lib/screenspace.bundle # OSX
+lib/screenspace.so     # Linux
+lib/screenspace.dll    # Windows
+```
+
+
+
+
 
 ## Plugin
 TODO
