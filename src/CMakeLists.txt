@@ -1,16 +1,16 @@
 set(SS_LIBRARY screenspace)
 set(SS_SOURCE_FILES
-        screenspace/PickerDrawOverride.cc
-        screenspace/PickerDrawOverride.hh
-        screenspace/PickerShape.cc
-        screenspace/PickerShape.hh
-        screenspace/commands/AddCommand.cc
-        screenspace/commands/AddCommand.hh
-        screenspace/commands/RemoveCommand.cc
-        screenspace/commands/RemoveCommand.hh
-        screenspace/Log.hh
-        screenspace/Log.cc
-        screenspace/Plugin.cc
+        ss/PickableDrawOverride.cc
+        ss/PickableDrawOverride.hh
+        ss/PickableShape.cc
+        ss/PickableShape.hh
+        ss/commands/AddCommand.cc
+        ss/commands/AddCommand.hh
+        ss/commands/RemoveCommand.cc
+        ss/commands/RemoveCommand.hh
+        ss/Log.hh
+        ss/Log.cc
+        ss/Plugin.cc
         )
 
 add_library(${SS_LIBRARY} SHARED ${SS_SOURCE_FILES})
@@ -24,14 +24,14 @@ add_custom_command(
         TARGET ${SS_LIBRARY} POST_BUILD
         COMMENT "Copying icons..."
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_LIST_DIR}/screenspace/icons
+        ${CMAKE_CURRENT_LIST_DIR}/ss/icons
         ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/icons)
 
 add_custom_command(
         TARGET ${SS_LIBRARY} POST_BUILD
         COMMENT "Copying scripts..."
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_LIST_DIR}/screenspace/scripts
+        ${CMAKE_CURRENT_LIST_DIR}/ss/scripts
         ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/scripts)
 
 add_custom_command(TARGET ${SS_LIBRARY} POST_BUILD

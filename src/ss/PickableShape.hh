@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SAMPLEPLUGIN_PICKERSHAPE_HH
-#define SAMPLEPLUGIN_PICKERSHAPE_HH
+#ifndef SAMPLEPLUGIN_PICKABLESHAPE_HH
+#define SAMPLEPLUGIN_PICKABLESHAPE_HH
 
 #include <maya/MPxSurfaceShape.h>
 
 namespace screenspace {
 
-class PickerShape : public MPxSurfaceShape {
+class PickableShape : public MPxSurfaceShape {
 public:
   static MTypeId id;
   static MString typeName;
@@ -51,4 +51,4 @@ private:
 
 }
 
-#endif // SAMPLEPLUGIN_PICKERSHAPE_HH
+#endif // SAMPLEPLUGIN_PICKABLESHAPE_HH

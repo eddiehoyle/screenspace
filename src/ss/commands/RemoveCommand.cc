@@ -1,7 +1,7 @@
-#include "screenspace/commands/RemoveCommand.hh"
-#include "screenspace/Log.hh"
-#include "screenspace/Types.hh"
-#include "screenspace/PickerShape.hh"
+#include "ss/commands/RemoveCommand.hh"
+#include "ss/Log.hh"
+#include "ss/Types.hh"
+#include "ss/PickableShape.hh"
 
 #include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
@@ -16,7 +16,7 @@ namespace screenspace {
 
 using Flags = std::pair< const char*, const char* >;
 
-MString RemoveCommand::typeName = "removePickers";
+MString RemoveCommand::typeName = "removePickables";
 
 static Flags kParentFlags = { "-p", "-parent" };
 static Flags kSelectedFlags = { "-sl", "-selected" };
@@ -41,7 +41,7 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
 
   if (parser.isFlagSet(kParentFlags.second) &&
       parser.isFlagSet(kSelectedFlags.second)) {
-    MGlobal::displayError("Error removing picker(s)! Flags 'parent' and 'selected' must be used separately");
+    MGlobal::displayError("Error removing pickable(s)! Flags 'parent' and 'selected' must be used separately");
     return MS::kFailure;
   }
 
@@ -58,7 +58,7 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
     status = list.add(parentName);
     if (status != MStatus::kSuccess) {
       MGlobal::displayError(
-          "Error removing picker(s)! Parent does not exist: " + parentName);
+          "Error removing pickable(s)! Parent does not exist: " + parentName);
       return MS::kFailure;
     }
 
@@ -81,12 +81,12 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
     }
 
     if (paths.length() == 0) {
-      MGlobal::displayError("Error removing picker(s)! No transforms selected");
+      MGlobal::displayError("Error removing pickable(s)! No transforms selected");
       return MS::kFailure;
     }
   }
 
-  MObjectArray pickers;
+  MObjectArray pickables;
   for (std::size_t i = 0; i < paths.length(); ++i) {
 
     const MDagPath& path = paths[i];
@@ -95,21 +95,21 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
 
     for (unsigned int i = 0; i < childCount; ++i) {
       MFnDependencyNode fnDepNode(path.child(i, &status));
-      if (fnDepNode.typeId() == PickerShape::id) {
-        pickers.append(fnDepNode.object());
+      if (fnDepNode.typeId() == PickableShape::id) {
+        pickables.append(fnDepNode.object());
       }
     }
   }
 
-  if (pickers.length() == 0) {
+  if (pickables.length() == 0) {
     MGlobal::displayError(
-        "Error removing picker(s)! Couldn't find any to remove");
+        "Error removing pickable(s)! Couldn't find any to remove");
     return MS::kFailure;
   }
 
   MDagModifier dgm;
-  for (std::size_t i = 0; i < pickers.length(); ++i) CHECK_MSTATUS(
-      dgm.deleteNode(pickers[i]));
+  for (std::size_t i = 0; i < pickables.length(); ++i) CHECK_MSTATUS(
+      dgm.deleteNode(pickables[i]));
   CHECK_MSTATUS(dgm.doIt());
 
   return MS::kSuccess;

@@ -1,8 +1,8 @@
-#include "screenspace/Log.hh"
-#include "screenspace/PickerShape.hh"
-#include "screenspace/PickerDrawOverride.hh"
-#include "screenspace/commands/AddCommand.hh"
-#include "screenspace/commands/RemoveCommand.hh"
+#include "ss/Log.hh"
+#include "ss/PickableShape.hh"
+#include "ss/PickableDrawOverride.hh"
+#include "ss/commands/AddCommand.hh"
+#include "ss/commands/RemoveCommand.hh"
 
 #include <maya/MGlobal.h>
 #include <maya/MFnPlugin.h>
@@ -10,7 +10,7 @@
 
 using namespace screenspace;
 
-static const MString AEpickerTemplate = R"(global proc AEpickerTemplate(string $nodeName)
+static const MString AEpickableTemplate = R"(global proc AEpickableTemplate(string $nodeName)
 {
   editorTemplate -beginScrollLayout;
   editorTemplate -beginLayout "Geometry" -collapse 0;
@@ -35,18 +35,18 @@ MStatus initializePlugin(MObject obj) {
   MFnPlugin plugin(obj, "Eddie Hoyle", "1.0", "Any");
 
   MStatus status;
-  status = plugin.registerNode(PickerShape::typeName,
-                               PickerShape::id,
-                               &PickerShape::creator,
-                               &PickerShape::initialize,
+  status = plugin.registerNode(PickableShape::typeName,
+                               PickableShape::id,
+                               &PickableShape::creator,
+                               &PickableShape::initialize,
                                MPxNode::kSurfaceShape,
-                               &PickerDrawOverride::classifcation);
+                               &PickableDrawOverride::classifcation);
   CHECK_MSTATUS(status);
 
   status = MHWRender::MDrawRegistry::registerDrawOverrideCreator(
-      PickerDrawOverride::classifcation,
-      PickerDrawOverride::id,
-      PickerDrawOverride::creator);
+      PickableDrawOverride::classifcation,
+      PickableDrawOverride::id,
+      PickableDrawOverride::creator);
   CHECK_MSTATUS(status);
 
   status = plugin.registerCommand(AddCommand::typeName,
@@ -59,7 +59,7 @@ MStatus initializePlugin(MObject obj) {
                                   RemoveCommand::createSyntax);
   CHECK_MSTATUS(status);
 
-//  MGlobal::executeCommandOnIdle(AEpickerTemplate);
+//  MGlobal::executeCommandOnIdle(AEpickableTemplate);
   return status;
 }
 
@@ -67,7 +67,7 @@ MStatus uninitializePlugin(MObject obj) {
   MFnPlugin plugin(obj);
   MStatus status;
 
-  status = plugin.deregisterNode(PickerShape::id);
+  status = plugin.deregisterNode(PickableShape::id);
   CHECK_MSTATUS(status);
 
   status = plugin.deregisterCommand(AddCommand::typeName);

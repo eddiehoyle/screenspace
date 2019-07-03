@@ -35,12 +35,14 @@ cmake ..
 make
 ```
 
-Once built, the library will can be found in the `plugin/` directory. Copy this file somewhere safe. It's now safe to 
+Once built, check the `plugin` directory for a bunch of files.
 
 ```bash
-lib/screenspace.bundle # OSX
-lib/screenspace.so     # Linux
-lib/screenspace.dll    # Windows
+plugin/screenspace.bundle # OSX
+                  .so     # Linux
+                  .dll    # Windows
+plugin/icons/out_pickable.png
+plugin/scripts/AEpickableTemplate.mel
 ```
 
 

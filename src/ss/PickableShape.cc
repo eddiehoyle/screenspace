@@ -1,6 +1,6 @@
-#include "PickerShape.hh"
-#include "screenspace/Log.hh"
-#include "screenspace/Types.hh"
+#include "PickableShape.hh"
+#include "ss/Log.hh"
+#include "ss/Types.hh"
 
 #include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
@@ -9,29 +9,29 @@
 
 namespace screenspace {
 
-MString PickerShape::typeName = "pickable";
-MTypeId PickerShape::id(0x8701F);
+MString PickableShape::typeName = "pickable";
+MTypeId PickableShape::id(0x8701F);
 
-MObject PickerShape::m_camera;
-MObject PickerShape::m_shape;
-MObject PickerShape::m_color;
-MObject PickerShape::m_opacity;
-MObject PickerShape::m_size;
-MObject PickerShape::m_width;
-MObject PickerShape::m_height;
-MObject PickerShape::m_depth;
-MObject PickerShape::m_position;
-MObject PickerShape::m_horizontalAlign;
-MObject PickerShape::m_verticalAlign;
-MObject PickerShape::m_offsetX;
-MObject PickerShape::m_offsetY;
-MObject PickerShape::m_offset;
+MObject PickableShape::m_camera;
+MObject PickableShape::m_shape;
+MObject PickableShape::m_color;
+MObject PickableShape::m_opacity;
+MObject PickableShape::m_size;
+MObject PickableShape::m_width;
+MObject PickableShape::m_height;
+MObject PickableShape::m_depth;
+MObject PickableShape::m_position;
+MObject PickableShape::m_horizontalAlign;
+MObject PickableShape::m_verticalAlign;
+MObject PickableShape::m_offsetX;
+MObject PickableShape::m_offsetY;
+MObject PickableShape::m_offset;
 
-void* PickerShape::creator() {
-  return new PickerShape();
+void* PickableShape::creator() {
+  return new PickableShape();
 }
 
-MStatus PickerShape::initialize() {
+MStatus PickableShape::initialize() {
 
   MStatus status;
 

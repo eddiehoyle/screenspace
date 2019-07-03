@@ -1,7 +1,7 @@
-#include "screenspace/commands/AddCommand.hh"
-#include "screenspace/Log.hh"
-#include "screenspace/Types.hh"
-#include "screenspace/PickerShape.hh"
+#include "ss/commands/AddCommand.hh"
+#include "ss/Log.hh"
+#include "ss/Types.hh"
+#include "ss/PickableShape.hh"
 
 #include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
@@ -30,7 +30,7 @@ static Flags kWidthFlags = {"-w", "-width"};
 static Flags kHeightFlags = {"-w", "-height"};
 static Flags kOffsetFlags = {"-o", "-offset"};
 
-MString AddCommand::typeName = "addPicker";
+MString AddCommand::typeName = "addPickable";
 
 void* AddCommand::creator() {
   return new AddCommand();
@@ -66,13 +66,13 @@ MStatus AddCommand::doIt(const MArgList& args)
 
   if (!parser.isFlagSet(kCameraFlags.second))
   {
-    MGlobal::displayError("Error attaching picker: No camera set.");
+    MGlobal::displayError("Error attaching pickable! No camera set.");
     return MS::kFailure;
   }
 
   if (!parser.isFlagSet(kParentFlags.second))
   {
-    MGlobal::displayError("Error attaching picker: No parent set.");
+    MGlobal::displayError("Error attaching pickable! No parent set.");
     return MS::kFailure;
   }
 
@@ -89,7 +89,7 @@ MStatus AddCommand::doIt(const MArgList& args)
     status = list.add(parentName);
     if (status != MStatus::kSuccess)
     {
-      MGlobal::displayError("Error attaching picker! Parent does not exist: " + parentName);
+      MGlobal::displayError("Error attaching pickable! Parent does not exist: " + parentName);
       return MS::kFailure;
     }
     CHECK_MSTATUS(list.getDagPath(0, parentPath));
@@ -100,7 +100,7 @@ MStatus AddCommand::doIt(const MArgList& args)
     status = list.add(cameraName);
     if (status != MStatus::kSuccess)
     {
-      MGlobal::displayError("Error attaching picker! Camera does not exist: " + cameraName);
+      MGlobal::displayError("Error attaching pickable! Camera does not exist: " + cameraName);
       return MS::kFailure;
     }
     CHECK_MSTATUS(list.getDagPath(0, cameraPath));
@@ -129,17 +129,17 @@ MStatus AddCommand::doIt(const MArgList& args)
 
   // Process
   MDagModifier dgm;
-  MObject pickerObj = dgm.createNode(PickerShape::id, parentPath.node(), &status);
+  MObject pickableObj = dgm.createNode(PickableShape::id, parentPath.node(), &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(dgm.connect(MPlug(cameraPath.node(), MNodeClass("camera").attribute("message")),
-                            MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("camera"))));
+                            MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("camera"))));
 
   // Layout
   if (parser.isFlagSet(kDepthFlags.second))
   {
     int depth;
     CHECK_MSTATUS(parser.getFlagArgument(kDepthFlags.second, 0, depth));
-    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("depth")), float(depth)));
+    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("depth")), float(depth)));
   }
 
   if (parser.isFlagSet(kPositionFlags.second))
@@ -154,11 +154,11 @@ MStatus AddCommand::doIt(const MArgList& args)
       position = static_cast<int>(Position::Absolute);
 
     if (position == -1) {
-      MGlobal::displayError("Error attaching picker! '" + _position + "' is not a valid position.");
+      MGlobal::displayError("Error attaching pickable! '" + _position + "' is not a valid position.");
       return MS::kFailure;
     }
 
-    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("position")), position));
+    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("position")), position));
   }
 
   if (parser.isFlagSet(kVerticalAlignFlags.second))
@@ -176,10 +176,10 @@ MStatus AddCommand::doIt(const MArgList& args)
       alignment = static_cast<int>(VerticalAlign::Top);
 
     if (alignment == -1) {
-      MGlobal::displayError("Error attaching picker! '" + _alignment + "' is not a valid vertical alignment.");
+      MGlobal::displayError("Error attaching pickable! '" + _alignment + "' is not a valid vertical alignment.");
       return MS::kFailure;
     }
-    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("verticalAlign")), alignment));
+    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("verticalAlign")), alignment));
   }
 
   if (parser.isFlagSet(kHorizontalAlignFlags.second))
@@ -198,10 +198,10 @@ MStatus AddCommand::doIt(const MArgList& args)
 
     if (alignment == -1)
     {
-      MGlobal::displayError("Error attaching picker! '" + _alignment + "' is not a valid horizontal alignment.");
+      MGlobal::displayError("Error attaching pickable! '" + _alignment + "' is not a valid horizontal alignment.");
       return MS::kFailure;
     }
-    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("horizontalAlign")), alignment));
+    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("horizontalAlign")), alignment));
   }
 
   // Geometry
@@ -219,10 +219,10 @@ MStatus AddCommand::doIt(const MArgList& args)
 
     if (shape == -1)
     {
-      MGlobal::displayError("Error attaching picker! '" + _shape + "' is not a valid shape.");
+      MGlobal::displayError("Error attaching pickable! '" + _shape + "' is not a valid shape.");
       return MS::kFailure;
     }
-    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("shape")), shape));
+    CHECK_MSTATUS(dgm.newPlugValueInt(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("shape")), shape));
   }
 
   if (parser.isFlagSet(kColorFlags.second))
@@ -236,35 +236,35 @@ MStatus AddCommand::doIt(const MArgList& args)
     MObject numObj = numData.create(MFnNumericData::k3Float, &status);
     CHECK_MSTATUS(status);
     CHECK_MSTATUS(numData.setData(float(r), float(g), float(b)));
-    CHECK_MSTATUS(dgm.newPlugValue(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("color")), numObj));
+    CHECK_MSTATUS(dgm.newPlugValue(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("color")), numObj));
   }
 
   if (parser.isFlagSet(kOpacityFlags.second))
   {
     double opacity;
     CHECK_MSTATUS(parser.getFlagArgument(kOpacityFlags.second, 0, opacity));
-    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("opacity")), float(opacity)));
+    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("opacity")), float(opacity)));
   }
 
   if (parser.isFlagSet(kSizeFlags.second))
   {
     double size;
     CHECK_MSTATUS(parser.getFlagArgument(kSizeFlags.second, 0, size));
-    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("size")), float(size)));
+    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("size")), float(size)));
   }
 
   if (parser.isFlagSet(kWidthFlags.second))
   {
     double width;
     CHECK_MSTATUS(parser.getFlagArgument(kWidthFlags.second, 0, width));
-    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("width")), float(width)));
+    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("width")), float(width)));
   }
 
   if (parser.isFlagSet(kHeightFlags.second))
   {
     double height;
     CHECK_MSTATUS(parser.getFlagArgument(kWidthFlags.second, 0, height));
-    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("height")), float(height)));
+    CHECK_MSTATUS(dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("height")), float(height)));
   }
 
   if (parser.isFlagSet(kOffsetFlags.second))
@@ -277,7 +277,7 @@ MStatus AddCommand::doIt(const MArgList& args)
     MObject numObj = numData.create(MFnNumericData::k2Float, &status);
     CHECK_MSTATUS(status);
     CHECK_MSTATUS(numData.setData(float(offsetX), float(offsetY)));
-    CHECK_MSTATUS(dgm.newPlugValue(MPlug(pickerObj, MNodeClass(PickerShape::id).attribute("offset")), numObj));
+    CHECK_MSTATUS(dgm.newPlugValue(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("offset")), numObj));
   }
 
   CHECK_MSTATUS(dgm.doIt());

@@ -1,7 +1,7 @@
-#include "screenspace/PickerDrawOverride.hh"
-#include "screenspace/Log.hh"
-#include "screenspace/Types.hh"
-#include "screenspace/PickerShape.hh"
+#include "ss/PickableDrawOverride.hh"
+#include "ss/Log.hh"
+#include "ss/Types.hh"
+#include "ss/PickableShape.hh"
 
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
@@ -16,8 +16,8 @@
 
 namespace screenspace {
 
-MString PickerDrawOverride::classifcation = "drawdb/geometry/screenspace/picker";
-MString PickerDrawOverride::id = "picker";
+MString PickableDrawOverride::classifcation = "drawdb/geometry/ss/pickable";
+MString PickableDrawOverride::id = "pickable";
 
 struct Viewport {
   int width;
@@ -68,10 +68,10 @@ MPoint computeViewportToWorld(const MFrameContext& context,
   return near + (direction * scalar);
 }
 
-class PickerUserData : public MUserData {
+class PickableUserData : public MUserData {
 public:
-  PickerUserData() : MUserData(false) {}
-  ~PickerUserData() override = default;
+  PickableUserData() : MUserData(false) {}
+  ~PickableUserData() override = default;
 
   inline const MMatrix& matrix() const {return m_matrix;}
   inline const Viewport& viewport() const {return m_viewport;}
@@ -79,27 +79,26 @@ public:
   inline const Style& style() const {return m_style;}
 
 public:
-
   MMatrix m_matrix;
   Viewport m_viewport;
   Geometry m_geometry;
   Style m_style;
 };
 
-void prepareMatrix(const MDagPath& pickerDag,
+void prepareMatrix(const MDagPath& pickableDag,
                    const MDagPath& cameraDag,
                    const MFrameContext& frameContext,
-                   PickerUserData* data)
+                   PickableUserData* data)
 {
-  const MNodeClass pickerCls(PickerShape::id);
-  const MObject pickerObj(pickerDag.node());
+  const MNodeClass pickableCls(PickableShape::id);
+  const MObject pickableObj(pickableDag.node());
 
   int _, viewportWidth, viewportHeight;
   frameContext.getViewportDimensions(_, _, viewportWidth, viewportHeight);
 
   // Draw depth
   int depth;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("depth")).getValue(depth));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("depth")).getValue(depth));
 
   const MPoint nearBL = computeViewportToWorld(frameContext, 0, 0, depth);
   const MPoint nearTR = computeViewportToWorld(frameContext, viewportWidth, viewportHeight, depth);
@@ -117,7 +116,7 @@ void prepareMatrix(const MDagPath& pickerDag,
   data->m_viewport = viewport;
 
   short _position;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("position")).getValue(_position));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("position")).getValue(_position));
   Position position = static_cast<Position>(_position);
 
   // Viewport scale factor
@@ -140,11 +139,11 @@ void prepareMatrix(const MDagPath& pickerDag,
   }
 
   short _horizontalAlign;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("horizontalAlign")).getValue(_horizontalAlign));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("horizontalAlign")).getValue(_horizontalAlign));
   HorizontalAlign horizontalAlign = static_cast<HorizontalAlign>(_horizontalAlign);
 
   float _verticalAlign;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("verticalAlign")).getValue(_verticalAlign));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("verticalAlign")).getValue(_verticalAlign));
   VerticalAlign verticalAlign = static_cast<VerticalAlign>(_verticalAlign);
 
   float alignOffsetX;
@@ -177,8 +176,8 @@ void prepareMatrix(const MDagPath& pickerDag,
 
   // Fetch offset
   float viewportOffsetX, viewportOffsetY;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetX")).getValue(viewportOffsetX));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("offsetY")).getValue(viewportOffsetY));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("offsetX")).getValue(viewportOffsetX));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("offsetY")).getValue(viewportOffsetY));
   MPoint viewportOffset = computeViewportToWorld(frameContext,
                                                  alignOffsetX + viewportOffsetX * viewportUnitX,
                                                  alignOffsetY + viewportOffsetY * viewportUnitY,
@@ -195,9 +194,9 @@ void prepareMatrix(const MDagPath& pickerDag,
 
   // Fetch geometry
   float size, width, height;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("size")).getValue(size));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("width")).getValue(width));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("height")).getValue(height));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("size")).getValue(size));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("width")).getValue(width));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("height")).getValue(height));
 
   // Prepare matrices
   MMatrix screenspaceTranslateMatrix;
@@ -224,24 +223,24 @@ void prepareMatrix(const MDagPath& pickerDag,
   }
 
   MMatrix screenWorldMatrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix;
-  data->m_matrix = screenWorldMatrix * pickerDag.inclusiveMatrixInverse();
+  data->m_matrix = screenWorldMatrix * pickableDag.inclusiveMatrixInverse();
 }
 
-void prepareGeometry(const MDagPath& pickerDag,
+void prepareGeometry(const MDagPath& pickableDag,
                      const MDagPath& cameraDag,
                      const MFrameContext& frameContext,
-                     PickerUserData* data)
+                     PickableUserData* data)
 {
-  const MNodeClass pickerCls(PickerShape::id);
-  const MObject pickerObj(pickerDag.node());
+  const MNodeClass pickableCls(PickableShape::id);
+  const MObject pickableObj(pickableDag.node());
 
   MColor color;
-  MFnNumericData colorData(MPlug(pickerObj, pickerCls.attribute("color")).asMObject());
+  MFnNumericData colorData(MPlug(pickableObj, pickableCls.attribute("color")).asMObject());
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("opacity")).getValue(color.a));
 
   short _shape;
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("shape")).getValue(_shape));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("shape")).getValue(_shape));
   Shape shape = static_cast<Shape>(_shape);
 
   Geometry geometry;
@@ -307,34 +306,34 @@ void prepareGeometry(const MDagPath& pickerDag,
   data->m_geometry = geometry;
 }
 
-void prepareStyle(const MDagPath& pickerDag,
+void prepareStyle(const MDagPath& pickableDag,
                   const MDagPath& cameraDag,
                   const MFrameContext& context,
-                  PickerUserData* data)
+                  PickableUserData* data)
 {
-  const MNodeClass pickerCls(PickerShape::id);
-  const MObject pickerObj(pickerDag.node());
+  const MNodeClass pickableCls(PickableShape::id);
+  const MObject pickableObj(pickableDag.node());
 
   MColor color;
-  MFnNumericData colorData(MPlug(pickerObj, pickerCls.attribute("color")).asMObject());
+  MFnNumericData colorData(MPlug(pickableObj, pickableCls.attribute("color")).asMObject());
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
-  CHECK_MSTATUS(MPlug(pickerObj, pickerCls.attribute("opacity")).getValue(color.a));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("opacity")).getValue(color.a));
 
   Style style;
   style.color = color;
   data->m_style = style;
 }
 
-MPxDrawOverride* PickerDrawOverride::creator(const MObject& obj)
+MPxDrawOverride* PickableDrawOverride::creator(const MObject& obj)
 {
-  return new PickerDrawOverride(obj);
+  return new PickableDrawOverride(obj);
 }
 
-bool PickerDrawOverride::isTargetCamera(const MDagPath& pickerDag, const MDagPath& cameraDag) const
+bool PickableDrawOverride::isTargetCamera(const MDagPath& pickableDag, const MDagPath& cameraDag) const
 {
-  const MNodeClass pickerCls(PickerShape::id);
-  const MObject pickerObj(pickerDag.node());
-  const MPlug cameraPlug(pickerObj, pickerCls.attribute("camera"));
+  const MNodeClass pickableCls(PickableShape::id);
+  const MObject pickableObj(pickableDag.node());
+  const MPlug cameraPlug(pickableObj, pickableCls.attribute("camera"));
 
   MPlugArray srcPlugArray;
   cameraPlug.connectedTo(srcPlugArray, true, false);
@@ -348,31 +347,31 @@ bool PickerDrawOverride::isTargetCamera(const MDagPath& pickerDag, const MDagPat
   return false;
 }
 
-MUserData* PickerDrawOverride::prepareForDraw(const MDagPath& pickerDag,
+MUserData* PickableDrawOverride::prepareForDraw(const MDagPath& pickableDag,
                                               const MDagPath& cameraDag,
                                               const MFrameContext& frameContext,
                                               MUserData* userData) {
 
-  if (!isTargetCamera(pickerDag, cameraDag))
+  if (!isTargetCamera(pickableDag, cameraDag))
     return nullptr;
 
-  PickerUserData* data = dynamic_cast<PickerUserData*>(userData);
+  PickableUserData* data = dynamic_cast<PickableUserData*>(userData);
   if (!data)
-    data = new PickerUserData();
+    data = new PickableUserData();
 
-  prepareMatrix(pickerDag, cameraDag, frameContext, data);
-  prepareGeometry(pickerDag, cameraDag, frameContext, data);
-  prepareStyle(pickerDag, cameraDag, frameContext, data);
+  prepareMatrix(pickableDag, cameraDag, frameContext, data);
+  prepareGeometry(pickableDag, cameraDag, frameContext, data);
+  prepareStyle(pickableDag, cameraDag, frameContext, data);
 
   return data;
 }
 
-void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
+void PickableDrawOverride::addUIDrawables(const MDagPath& objPath,
                                         MHWRender::MUIDrawManager& drawManager,
                                         const MHWRender::MFrameContext& frameContext,
                                         const MUserData* userData) {
 
-  const PickerUserData* data = dynamic_cast<const PickerUserData*>(userData);
+  const PickableUserData* data = dynamic_cast<const PickableUserData*>(userData);
   if (!data)
     return;
 
@@ -392,7 +391,7 @@ void PickerDrawOverride::addUIDrawables(const MDagPath& objPath,
   drawManager.endDrawable();
 }
 
-PickerDrawOverride::PickerDrawOverride(const MObject& obj) : MPxDrawOverride(obj, nullptr) {
+PickableDrawOverride::PickableDrawOverride(const MObject& obj) : MPxDrawOverride(obj, nullptr) {
 
 }
 

@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef SAMPLEPLUGIN_PICKERDRAWOVERRIDE_HH
-#define SAMPLEPLUGIN_PICKERDRAWOVERRIDE_HH
+#ifndef SAMPLEPLUGIN_PICKABLEDRAWOVERRIDE_HH
+#define SAMPLEPLUGIN_PICKABLEDRAWOVERRIDE_HH
 
 #include <maya/MPxDrawOverride.h>
 
 namespace screenspace {
 
-class PickerDrawOverride : public MPxDrawOverride
+class PickableDrawOverride : public MPxDrawOverride
 {
 public:
   static MString classifcation;
@@ -28,30 +28,30 @@ public:
 
 public:
 
-  ~PickerDrawOverride() override = default;
+  ~PickableDrawOverride() override = default;
   MHWRender::DrawAPI supportedDrawAPIs() const override
   {
     return (MHWRender::kAllDevices);
   }
 
-  MUserData* prepareForDraw(const MDagPath& pickerDag,
+  MUserData* prepareForDraw(const MDagPath& pickableDag,
                             const MDagPath& cameraDag,
                             const MFrameContext& frameContext,
                             MUserData* oldData) override;
 
   bool hasUIDrawables() const override { return true; }
 
-  void addUIDrawables(const MDagPath& pickerDag,
+  void addUIDrawables(const MDagPath& pickableDag,
                       MHWRender::MUIDrawManager& drawManager,
                       const MHWRender::MFrameContext& frameContext,
                       const MUserData* data) override;
 
 private:
-  bool isTargetCamera(const MDagPath& picker, const MDagPath& camera) const;
+  bool isTargetCamera(const MDagPath& pickable, const MDagPath& camera) const;
 
 private:
-  PickerDrawOverride(const MObject& obj);
+  PickableDrawOverride(const MObject& obj);
 };
 
 }
-#endif // SAMPLEPLUGIN_PICKERDRAWOVERRIDE_HH
+#endif // SAMPLEPLUGIN_PICKABLEDRAWOVERRIDE_HH
