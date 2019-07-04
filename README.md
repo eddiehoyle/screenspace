@@ -41,11 +41,11 @@ plugin/screenspace.bundle # OSX
                   .dll    # Windows
 ```
 
-See the plugin installation guide [Maya 2018 docs](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Customizing/files/GUID-FA51BD26-86F3-4F41-9486-2C3CF52B9E17-htm.html) for where to put everything. 
+See the plugin installation guide [Maya 2018 docs](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Customizing/files/GUID-FA51BD26-86F3-4F41-9486-2C3CF52B9E17-htm.html) for more information. 
 
 # Loading
 
-In Maya, go to `Windows > Settings/Preferences` and open the `Plug-in Manager`. Look for _screenspace_ plugin. Load it and you're all set!
+In Maya, go to `Windows > Settings/Preferences` and open the `Plug-in Manager`. Look for the _screenspace_ plugin, load it and you're all set!
 
 # How to use
 Screenspace comes with an `addPickable` command that makes attaching to existing transforms easy.
@@ -55,7 +55,7 @@ from maya import cmds
 cmds.addPickable(parent="transform1", camera="perspShape")
 ```
 
-The above example features the minimum required arguments to attach a pickable. You'll need a `parent` to attach the picker to and a `camera` whose viewports to display the pickable on. Fill in these details to fit your needs.
+The above example features the _minimum_ required arguments to run this command. You'll need a `parent` to attach the picker to and a `camera` whose viewports to display the pickable on. Fill in these details to fit your needs.
 
 Here's an example Python script of attaching a pickable to a selected transform and the perspective camera.
 
@@ -67,7 +67,7 @@ if len(selected) != 1:
 cmds.addPickable(parent=selected[0], camera="perspShape")
 ```
 
-# Advanced
+## Advanced
 
 The `addPickable` command also supports a bunch of extra options.
 
