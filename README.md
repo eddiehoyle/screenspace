@@ -1,11 +1,11 @@
 # screenspace
 Screenspace is a Maya plugin that allows for pickable shapes to be added to transforms that display as if they were attached to the viewport. Their viewport positions will be maintained as you move the controls and tumble the camera.
 
-![alt text](resources/screenspace1.png "Pickable")
+![alt text](resources/screenspace1.gif "Pickable")
 
 Pickables can be styled and offset to your taste. Attributes include as color, width, height, and vertical and horizontal alignment to name a few.
 
-![alt text](resources/screenspace2.png "Style")
+![alt text](resources/screenspace2.gif "Style")
 
 Attach to _any_ rig! (*Azri rig courtesy of: https://www.gameanim.com/*
 )
