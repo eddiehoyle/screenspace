@@ -51,12 +51,12 @@ MStatus initializePlugin(MObject obj) {
 
   status = plugin.registerCommand(AddCommand::typeName,
                                   AddCommand::creator,
-                                  AddCommand::createSyntax);
+                                  AddCommand::syntaxCreator);
   CHECK_MSTATUS(status);
 
   status = plugin.registerCommand(RemoveCommand::typeName,
                                   RemoveCommand::creator,
-                                  RemoveCommand::createSyntax);
+                                  RemoveCommand::syntaxCreator);
   CHECK_MSTATUS(status);
 
 //  MGlobal::executeCommandOnIdle(AEpickableTemplate);

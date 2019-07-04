@@ -16,7 +16,9 @@
 #define SCREENSPACE_REMOVECOMMAND_HH
 
 #include <maya/MPxCommand.h>
+#include <maya/MDagModifier.h>
 #include <maya/MSyntax.h>
+#include <maya/MObjectArray.h>
 
 namespace screenspace {
 
@@ -24,10 +26,20 @@ class RemoveCommand : public MPxCommand {
 public:
   static MString typeName;
   static void* creator();
-  static MSyntax createSyntax();
+  static MSyntax syntaxCreator();
+
 public:
-  virtual MStatus doIt(const MArgList& args);
+  RemoveCommand();
+  bool isUndoable() const override {return true;}
+  MStatus doIt(const MArgList& args) override;
+  MStatus redoIt() override;
+  MStatus undoIt() override;
+
+private:
+  MDagModifier m_dgm;
+  MObjectArray m_pickables;
 };
 
 }
+
 #endif // SCREENSPACE_REMOVECOMMAND_HH

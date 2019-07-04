@@ -2,6 +2,8 @@
 #include "ss/Log.hh"
 #include "ss/Types.hh"
 #include "ss/PickableShape.hh"
+#include "RemoveCommand.hh"
+
 
 #include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
@@ -25,7 +27,12 @@ void* RemoveCommand::creator() {
   return new RemoveCommand();
 }
 
-MSyntax RemoveCommand::createSyntax() {
+RemoveCommand::RemoveCommand()
+    : m_dgm(),
+      m_pickables()
+{}
+
+MSyntax RemoveCommand::syntaxCreator() {
 
   MSyntax syntax;
   syntax.addFlag(kParentFlags.first, kParentFlags.second, MSyntax::kString);
@@ -42,6 +49,12 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
   if (parser.isFlagSet(kParentFlags.second) &&
       parser.isFlagSet(kSelectedFlags.second)) {
     MGlobal::displayError("Error removing pickable(s)! Flags 'parent' and 'selected' must be used separately");
+    return MS::kFailure;
+  }
+
+  if (!parser.isFlagSet(kParentFlags.second) &&
+      !parser.isFlagSet(kSelectedFlags.second)) {
+    MGlobal::displayError("Error removing pickable(s)! Flags 'parent' or 'selected' are required");
     return MS::kFailure;
   }
 
@@ -86,7 +99,6 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
     }
   }
 
-  MObjectArray pickables;
   for (std::size_t i = 0; i < paths.length(); ++i) {
 
     const MDagPath& path = paths[i];
@@ -96,23 +108,32 @@ MStatus RemoveCommand::doIt(const MArgList& args) {
     for (unsigned int i = 0; i < childCount; ++i) {
       MFnDependencyNode fnDepNode(path.child(i, &status));
       if (fnDepNode.typeId() == PickableShape::id) {
-        pickables.append(fnDepNode.object());
+        m_pickables.append(fnDepNode.object());
       }
     }
   }
 
-  if (pickables.length() == 0) {
+  if (m_pickables.length() == 0) {
     MGlobal::displayError(
         "Error removing pickable(s)! Couldn't find any to remove");
     return MS::kFailure;
   }
 
-  MDagModifier dgm;
-  for (std::size_t i = 0; i < pickables.length(); ++i) CHECK_MSTATUS(
-      dgm.deleteNode(pickables[i]));
-  CHECK_MSTATUS(dgm.doIt());
+  return redoIt();
+}
 
+MStatus RemoveCommand::redoIt()
+{
+  MStatus status;
+  for (std::size_t i = 0; i < m_pickables.length(); ++i)
+  CHECK_MSTATUS(m_dgm.deleteNode(m_pickables[i]));
+  CHECK_MSTATUS(m_dgm.doIt());
   return MS::kSuccess;
+}
+
+MStatus RemoveCommand::undoIt()
+{
+  return m_dgm.undoIt();
 }
 
 }
