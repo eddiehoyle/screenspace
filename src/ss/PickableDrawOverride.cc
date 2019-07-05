@@ -53,22 +53,15 @@ bool linePlaneIntersection(const MVector& ray, const MVector& origin,
 
 /// Compute world position for viewport and offset slightly in front of near clipping plane
 MPoint computeViewportToWorld(const MFrameContext& context,
+                              float nearClipPlane,
                               int x, int y, int depth)
 {
   MPoint near, far;
   context.viewportToWorld(x, y, near, far);
 
-  MDagPath camera = context.getCurrentCameraPath();
-  MFnDependencyNode cam(camera.node());
-  MPlug plug = cam.findPlug("nearClipPlane");
-
-  float dist;
-  CHECK_MSTATUS(plug.getValue(dist));
-  TNC_DEBUG << "nearClipPlane: " << dist;
-
   // TODO:
   // Make this to be closer to the nearClipPlane than arbitrary 0.1f vale.
-  float scalar = dist * (depth + 1);
+  float scalar = nearClipPlane * (depth + 1);
 
   MVector direction = (far - near);
   direction.normalize();
@@ -104,12 +97,19 @@ void prepareMatrix(const MDagPath& pickableDag,
   int _, viewportWidth, viewportHeight;
   frameContext.getViewportDimensions(_, _, viewportWidth, viewportHeight);
 
+  const MDagPath camera = frameContext.getCurrentCameraPath();
+  const MFnDependencyNode cameraDep(camera.node());
+  const MNodeClass cameraCls(cameraDep.typeId());
+
+  float nearClipPlane;
+  MPlug(camera.node(), cameraCls.attribute("nearClipPlane")).getValue(nearClipPlane);
+
   // Draw depth
   int depth;
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("depth")).getValue(depth));
 
-  const MPoint nearBL = computeViewportToWorld(frameContext, 0, 0, depth);
-  const MPoint nearTR = computeViewportToWorld(frameContext, viewportWidth, viewportHeight, depth);
+  const MPoint nearBL = computeViewportToWorld(frameContext, nearClipPlane, 0, 0, depth);
+  const MPoint nearTR = computeViewportToWorld(frameContext, nearClipPlane, viewportWidth, viewportHeight, depth);
 
   float hyp = float((nearTR - nearBL).length());
   float theta = atanf(float(viewportHeight) / float(viewportWidth));
@@ -187,6 +187,7 @@ void prepareMatrix(const MDagPath& pickableDag,
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("offsetX")).getValue(viewportOffsetX));
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("offsetY")).getValue(viewportOffsetY));
   MPoint viewportOffset = computeViewportToWorld(frameContext,
+                                                 nearClipPlane,
                                                  alignOffsetX + viewportOffsetX * viewportUnitX,
                                                  alignOffsetY + viewportOffsetY * viewportUnitY,
                                                  depth);
