@@ -1,14 +1,14 @@
 ---
 name: Feature request
 about: Suggest an idea for this project
-title: ''
-labels: ''
+title: "[FEATURE]"
+labels: feature
 assignees: ''
 
 ---
 
-**Summary**
-<!-- A clear and concise description of what feature you'd like added. -->
+## Summary
+A clear and concise description of the feature you'd like added.
 
-**Additional context**
-Add any other context or screenshots about the feature request here.
+## Additional context
+Optional. Add any other context or screenshots about the feature request here.
