@@ -10,6 +10,7 @@
 #include <maya/MPointArray.h>
 #include <maya/MUintArray.h>
 #include <maya/MVectorArray.h>
+#include <maya/MFnDependencyNode.h>
 
 #include <cmath>
 
@@ -57,10 +58,17 @@ MPoint computeViewportToWorld(const MFrameContext& context,
   MPoint near, far;
   context.viewportToWorld(x, y, near, far);
 
+  MDagPath camera = context.getCurrentCameraPath();
+  MFnDependencyNode cam(camera.node());
+  MPlug plug = cam.findPlug("nearClipPlane");
+
+  float dist;
+  CHECK_MSTATUS(plug.getValue(dist));
+  TNC_DEBUG << "nearClipPlane: " << dist;
+
   // TODO:
-  // Make this to be close to the nearClipPlane
-  // than arbitrary 0.1f vale.
-  float scalar = 0.1f * (depth + 1);
+  // Make this to be closer to the nearClipPlane than arbitrary 0.1f vale.
+  float scalar = dist * (depth + 1);
 
   MVector direction = (far - near);
   direction.normalize();
@@ -182,6 +190,8 @@ void prepareMatrix(const MDagPath& pickableDag,
                                                  alignOffsetX + viewportOffsetX * viewportUnitX,
                                                  alignOffsetY + viewportOffsetY * viewportUnitY,
                                                  depth);
+
+  TNC_DEBUG << "viewportOffset: " << viewportOffset;
 
   // Compute offset
   MMatrix viewMatrix = cameraDag.inclusiveMatrix();
