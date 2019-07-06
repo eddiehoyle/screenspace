@@ -3,16 +3,18 @@ Screenspace is a Maya plugin that allows pickable shapes to be added to transfor
 
 ![alt text](resources/screenspace1.gif "Pickable")
 
-Pickables can be styled and offset to your taste including color, position, size, and vertical and horizontal alignment.
+Pickables can be styled and offset to your taste! Some options include color, position, size, and vertical and horizontal alignment.
 
 ![alt text](resources/screenspace2.gif "Style")
 
-Attach to any rig and build custom layouts! (*Azri rig courtesy of: https://www.gameanim.com/*)
+Pickables can be attached to any rig! Build your own custom interfaces easily.
 
 ![alt text](resources/screenspace3.gif "Interfaces")
 
+<sup>(*Azri rig courtesy of: https://www.gameanim.com/*)</sup>
+
 # Building
-You'll need [CMake 3.0+](https://cmake.org), git, and Maya to build from source. Run the following commands in a shell.
+You'll need CMake, git, and Maya to build from source. Run the following commands in a shell.
 
 ```bash
 # Clone the repo
@@ -41,11 +43,11 @@ plugin/screenspace.bundle # OSX
                   .dll    # Windows
 ```
 
-See the plugin installation guide [Maya 2018 docs](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Customizing/files/GUID-FA51BD26-86F3-4F41-9486-2C3CF52B9E17-htm.html) for more information. 
+See ]Maya's plugin installation guide](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Customizing/files/GUID-FA51BD26-86F3-4F41-9486-2C3CF52B9E17-htm.html) for more details. 
 
 # Loading
 
-In Maya, go to `Windows > Settings/Preferences` and open the `Plug-in Manager`. Look for the _screenspace_ plugin, load it and you're all set!
+In Maya, go to `Windows > Settings/Preferences` and open the `Plug-in Manager`. Look for the _screenspace_ plugin. Load it and you're all set!
 
 # How to use
 Screenspace comes with an `addPickable` command that makes attaching to existing transforms easy.
@@ -55,9 +57,9 @@ from maya import cmds
 cmds.addPickable(parent="transform1", camera="perspShape")
 ```
 
-The above example features the _minimum_ required arguments to run this command. You'll need a `parent` to attach the picker to and a `camera` whose viewports to display the pickable on. Fill in these details to fit your needs.
+The above example features the _minimum_ required arguments to run this command. You'll need a `parent` to attach the pickable to and a `camera` whose viewports to display the pickable on. Fill in these details to fit your needs.
 
-Here's an example Python script of attaching a pickable to a selected transform and the perspective camera.
+Example Python script to attach a pickable to a selected transform and the perspective camera.
 
 ```python
 from maya import cmds
