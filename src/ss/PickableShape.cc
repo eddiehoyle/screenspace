@@ -1,11 +1,12 @@
 #include "PickableShape.hh"
+
 #include "ss/Log.hh"
 #include "ss/Types.hh"
 
-#include <maya/MFnTypedAttribute.h>
 #include <maya/MFnEnumAttribute.h>
-#include <maya/MFnNumericAttribute.h>
 #include <maya/MFnMessageAttribute.h>
+#include <maya/MFnNumericAttribute.h>
+#include <maya/MFnTypedAttribute.h>
 
 namespace screenspace {
 
@@ -164,6 +165,10 @@ MStatus PickableShape::initialize() {
   CHECK_MSTATUS(addAttribute(m_offset));
 
   return MStatus::kSuccess;
+}
+
+MSelectionMask PickableShape::getShapeSelectionMask() const {
+  return MSelectionMask::kSelectHandles;
 }
 
 }

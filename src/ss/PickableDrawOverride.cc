@@ -1,45 +1,55 @@
-#include "ss/PickableDrawOverride.hh"
-#include "ss/Log.hh"
-#include "ss/Types.hh"
-#include "ss/PickableShape.hh"
+#include "PickableDrawOverride.hh"
 
+#include "ss/Log.hh"
+#include "ss/PickableShape.hh"
+#include "ss/Types.hh"
+
+#include <maya/MColorArray.h>
+#include <maya/MFnDependencyNode.h>
+#include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
 #include <maya/MPlugArray.h>
-#include <maya/MNodeClass.h>
-#include <maya/MColorArray.h>
 #include <maya/MPointArray.h>
 #include <maya/MUintArray.h>
 #include <maya/MVectorArray.h>
-#include <maya/MFnDependencyNode.h>
 
 #include <cmath>
 
-
 namespace screenspace {
 
-MString PickableDrawOverride::classifcation = "drawdb/geometry/ss/pickable";
+MString PickableDrawOverride::classification = "drawdb/geometry/ss/pickable";
 MString PickableDrawOverride::id = "pickable";
 
+/// Viewport helper
 struct Viewport {
-  int width;
-  int height;
-  float worldspaceWidth;
-  float worldspaceHeight;
+  int width;               // Width of viewport in pixels
+  int height;              // Height of viewport in pixels
+  float worldspaceWidth;   // Distance in worldspace for height of viewport
+  float worldspaceHeight;  // Distance in worldspace for width of viewport
 };
 
+/// Geometry helper
 struct Geometry {
-  MUIDrawManager::Primitive primitive;
-  MPointArray vertices;
-  MVectorArray normals;
-  MColorArray colors;
-  MUintArray indices;
+  MUIDrawManager::Primitive primitive;  // Render primitive
+  MPointArray vertices;                 // Vertices
+  MVectorArray normals;                 // Per-vertex normal
+  MColorArray colors;                   // Per-vertex color
+  MUintArray indices;                   // Poly indices
 };
 
+/// Style helper
 struct Style {
-  Shape shape;
-  MColor color;
+  Shape shape;   // Draw shape
+  MColor color;  // Shape color
 };
 
+/// Find intersection point on a plane.
+/// \param ray The normalized ray direction.
+/// \param origin The origin of the ray.
+/// \param normal The normal of the plane.
+/// \param coord Some point on the plane
+/// \param contact The intersection point in worldspace.
+/// \return If an intersection occurred.
 bool linePlaneIntersection(const MVector& ray, const MVector& origin,
                            const MVector& normal, const MPoint& coord,
                            MPoint& contact) {
@@ -51,21 +61,25 @@ bool linePlaneIntersection(const MVector& ray, const MVector& origin,
   return true;
 }
 
-/// Compute world position for viewport and offset slightly in front of near clipping plane
-MPoint computeViewportToWorld(const MFrameContext& context,
+/// Compute a worldspace point for (x, y) coordinates in pixels
+/// from bottom left of viewport.
+/// \param frameContext The frame context before drawing.
+/// \param nearClipPlane Near clip plane value from camera.
+/// \param x Viewport position in pixels.
+/// \param y Viewport position in pixels.
+/// \param depth Depth of shape.
+/// \return The point.
+MPoint computeViewportToWorld(const MFrameContext& frameContext,
                               float nearClipPlane,
                               int x, int y, int depth)
 {
   MPoint near, far;
-  context.viewportToWorld(x, y, near, far);
-
-  // TODO:
-  // Make this to be closer to the nearClipPlane than arbitrary 0.1f vale.
-  float scalar = nearClipPlane * (depth + 1);
+  frameContext.viewportToWorld(x, y, near, far);
 
   MVector direction = (far - near);
   direction.normalize();
 
+  float scalar = nearClipPlane + 0.001f * (depth + 1);
   return near + (direction * scalar);
 }
 
@@ -74,6 +88,7 @@ public:
   PickableUserData() : MUserData(false) {}
   ~PickableUserData() override = default;
 
+public:
   inline const MMatrix& matrix() const {return m_matrix;}
   inline const Viewport& viewport() const {return m_viewport;}
   inline const Geometry& geometry() const {return m_geometry;}
@@ -86,13 +101,18 @@ public:
   Style m_style;
 };
 
-void prepareMatrix(const MDagPath& pickableDag,
-                   const MDagPath& cameraDag,
+/// Prepare matrix for drawing.
+/// \param pickablePath Path to pickable.
+/// \param cameraPath Path to camera.
+/// \param frameContext Viewport frame context.
+/// \param data Will have it's matrix and viewport data populated.
+void prepareMatrix(const MDagPath& pickablePath,
+                   const MDagPath& cameraPath,
                    const MFrameContext& frameContext,
                    PickableUserData* data)
 {
   const MNodeClass pickableCls(PickableShape::id);
-  const MObject pickableObj(pickableDag.node());
+  const MObject pickableObj(pickablePath.node());
 
   int _, viewportWidth, viewportHeight;
   frameContext.getViewportDimensions(_, _, viewportWidth, viewportHeight);
@@ -108,14 +128,15 @@ void prepareMatrix(const MDagPath& pickableDag,
   int depth;
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("depth")).getValue(depth));
 
+  // Compute viewport data
   const MPoint nearBL = computeViewportToWorld(frameContext, nearClipPlane, 0, 0, depth);
   const MPoint nearTR = computeViewportToWorld(frameContext, nearClipPlane, viewportWidth, viewportHeight, depth);
-
   float hyp = float((nearTR - nearBL).length());
   float theta = atanf(float(viewportHeight) / float(viewportWidth));
   float worldspaceWidth = cosf(theta) * hyp;
   float worldspaceHeight = sinf(theta) * hyp;
 
+  // Populate viewport
   Viewport viewport;
   viewport.width = viewportWidth;
   viewport.height = viewportHeight;
@@ -192,10 +213,8 @@ void prepareMatrix(const MDagPath& pickableDag,
                                                  alignOffsetY + viewportOffsetY * viewportUnitY,
                                                  depth);
 
-  TNC_DEBUG << "viewportOffset: " << viewportOffset;
-
   // Compute offset
-  MMatrix viewMatrix = cameraDag.inclusiveMatrix();
+  MMatrix viewMatrix = cameraPath.inclusiveMatrix();
   MPoint rayOrigin = MTransformationMatrix(viewMatrix).getTranslation(MSpace::kWorld);
   MVector ray = viewportOffset - rayOrigin;
   ray.normalize();
@@ -222,7 +241,7 @@ void prepareMatrix(const MDagPath& pickableDag,
   }
 
   // Rotate
-  screenspaceRotateMatrix = MTransformationMatrix(cameraDag.inclusiveMatrix()).asRotateMatrix();
+  screenspaceRotateMatrix = MTransformationMatrix(cameraPath.inclusiveMatrix()).asRotateMatrix();
 
   // Scale
   {
@@ -234,16 +253,21 @@ void prepareMatrix(const MDagPath& pickableDag,
   }
 
   MMatrix screenWorldMatrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix;
-  data->m_matrix = screenWorldMatrix * pickableDag.inclusiveMatrixInverse();
+  data->m_matrix = screenWorldMatrix * pickablePath.inclusiveMatrixInverse();
 }
 
-void prepareGeometry(const MDagPath& pickableDag,
-                     const MDagPath& cameraDag,
+/// Prepare geometry to be drawn.
+/// \param pickablePath Path to pickable.
+/// \param cameraPath Path to camera.
+/// \param frameContext Viewport frame context.
+/// \param data Will have it's geometry data populated.
+void prepareGeometry(const MDagPath& pickablePath,
+                     const MDagPath& cameraPath,
                      const MFrameContext& frameContext,
                      PickableUserData* data)
 {
   const MNodeClass pickableCls(PickableShape::id);
-  const MObject pickableObj(pickableDag.node());
+  const MObject pickableObj(pickablePath.node());
 
   MColor color;
   MFnNumericData colorData(MPlug(pickableObj, pickableCls.attribute("color")).asMObject());
@@ -292,7 +316,6 @@ void prepareGeometry(const MDagPath& pickableDag,
     case Shape::Rectangle:
     {
       geometry.primitive = MUIDrawManager::Primitive::kTriangles;
-
       geometry.vertices.append(MPoint(0.0, 0.0, 0.0, 1.0));
       geometry.vertices.append(MPoint(1.0, 0.0, 0.0, 1.0));
       geometry.vertices.append(MPoint(1.0, 1.0, 0.0, 1.0));
@@ -317,6 +340,11 @@ void prepareGeometry(const MDagPath& pickableDag,
   data->m_geometry = geometry;
 }
 
+/// Prepare geometry style.
+/// \param pickablePath Path to pickable.
+/// \param cameraPath Path to camera.
+/// \param frameContext Viewport frame context.
+/// \param data Will have it's style data populated.
 void prepareStyle(const MDagPath& pickableDag,
                   const MDagPath& cameraDag,
                   const MFrameContext& context,
@@ -340,7 +368,8 @@ MPxDrawOverride* PickableDrawOverride::creator(const MObject& obj)
   return new PickableDrawOverride(obj);
 }
 
-bool PickableDrawOverride::isTargetCamera(const MDagPath& pickableDag, const MDagPath& cameraDag) const
+bool PickableDrawOverride::isAttachedCamera(const MDagPath& pickableDag,
+                                            const MDagPath& cameraDag) const
 {
   const MNodeClass pickableCls(PickableShape::id);
   const MObject pickableObj(pickableDag.node());
@@ -358,18 +387,23 @@ bool PickableDrawOverride::isTargetCamera(const MDagPath& pickableDag, const MDa
   return false;
 }
 
+MHWRender::DrawAPI PickableDrawOverride::supportedDrawAPIs() const {
+  return MHWRender::kAllDevices;
+}
+
 MUserData* PickableDrawOverride::prepareForDraw(const MDagPath& pickableDag,
                                               const MDagPath& cameraDag,
                                               const MFrameContext& frameContext,
                                               MUserData* userData) {
 
-  if (!isTargetCamera(pickableDag, cameraDag))
+  if (!isAttachedCamera(pickableDag, cameraDag))
     return nullptr;
 
   PickableUserData* data = dynamic_cast<PickableUserData*>(userData);
   if (!data)
     data = new PickableUserData();
 
+  // Prepare
   prepareMatrix(pickableDag, cameraDag, frameContext, data);
   prepareGeometry(pickableDag, cameraDag, frameContext, data);
   prepareStyle(pickableDag, cameraDag, frameContext, data);
@@ -386,10 +420,12 @@ void PickableDrawOverride::addUIDrawables(const MDagPath& objPath,
   if (!data)
     return;
 
+  // Fetch
   const MMatrix& matrix = data->matrix();
   const Geometry& geometry = data->geometry();
   const Style& style = data->style();
 
+  // Draw
   drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
   drawManager.setPaintStyle(MUIDrawManager::kFlat);
   drawManager.setColor(style.color);
@@ -400,10 +436,6 @@ void PickableDrawOverride::addUIDrawables(const MDagPath& objPath,
                    &geometry.indices,
                    nullptr);
   drawManager.endDrawable();
-}
-
-PickableDrawOverride::PickableDrawOverride(const MObject& obj) : MPxDrawOverride(obj, nullptr) {
-
 }
 
 }

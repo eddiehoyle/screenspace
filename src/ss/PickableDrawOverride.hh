@@ -22,35 +22,35 @@ namespace screenspace {
 class PickableDrawOverride : public MPxDrawOverride
 {
 public:
-  static MString classifcation;
+  static MString classification;
   static MString id;
   static MPxDrawOverride* creator(const MObject& obj);
 
 public:
-
   ~PickableDrawOverride() override = default;
-  MHWRender::DrawAPI supportedDrawAPIs() const override
-  {
-    return (MHWRender::kAllDevices);
-  }
 
+public:
+  MHWRender::DrawAPI supportedDrawAPIs() const override;
   MUserData* prepareForDraw(const MDagPath& pickableDag,
                             const MDagPath& cameraDag,
                             const MFrameContext& frameContext,
                             MUserData* oldData) override;
-
   bool hasUIDrawables() const override { return true; }
-
   void addUIDrawables(const MDagPath& pickableDag,
                       MHWRender::MUIDrawManager& drawManager,
                       const MHWRender::MFrameContext& frameContext,
                       const MUserData* data) override;
 
 private:
-  bool isTargetCamera(const MDagPath& pickable, const MDagPath& camera) const;
+
+  /// Check if the pickable is attached to this camera.
+  /// \param pickable The pickable
+  /// \param camera The camera
+  /// \return True if attached, else false.
+  bool isAttachedCamera(const MDagPath& pickable, const MDagPath& camera) const;
 
 private:
-  PickableDrawOverride(const MObject& obj);
+  PickableDrawOverride(const MObject& obj) : MPxDrawOverride(obj, nullptr) {}
 };
 
 }

@@ -92,22 +92,22 @@ Log& error_log();
 
 } // namespace technic
 
-#define TNC_INITIALISE_LOG() \
+#define SS_INITIALISE_LOG() \
     ::technic::debug_log();     \
     ::technic::info_log();      \
     ::technic::warn_log();      \
     ::technic::error_log();
 
-#ifdef TNC_LOGGING_ENABLED
-#define TNC_DEBUG ::technic::Stream( ::technic::debug_log(), "DBG" ) << "[" << __FUNCTION__ << "]: "
-#define TNC_INFO ::technic::Stream( ::technic::info_log(), "NFO" ) << "[" << __FUNCTION__ << "]: "
-#define TNC_WARN ::technic::Stream( ::technic::warn_log(), "WRN" ) << "[" << __FUNCTION__ << "]: "
-#define TNC_ERROR ::technic::Stream( ::technic::error_log(), "ERR" ) << "[" << __FUNCTION__ << "]: "
+#ifdef SS_LOGGING_ENABLED
+#define SS_DEBUG ::technic::Stream( ::technic::debug_log(), "DBG" ) << "[" << __FUNCTION__ << "]: "
+#define SS_INFO ::technic::Stream( ::technic::info_log(), "NFO" ) << "[" << __FUNCTION__ << "]: "
+#define SS_WARN ::technic::Stream( ::technic::warn_log(), "WRN" ) << "[" << __FUNCTION__ << "]: "
+#define SS_ERROR ::technic::Stream( ::technic::error_log(), "ERR" ) << "[" << __FUNCTION__ << "]: "
 #else
-#define TNC_DEBUG ::technic::NullStream( ::technic::debug_log(), "DBG" )
-#define TNC_INFO ::technic::NullStream( ::technic::info_log(), "NFO" )
-#define TNC_WARN ::technic::NullStream( ::technic::warn_log(), "WRN" )
-#define TNC_ERROR ::technic::NullStream( ::technic::error_log(), "ERR" )
+#define SS_DEBUG ::technic::NullStream( ::technic::debug_log(), "DBG" )
+#define SS_INFO ::technic::NullStream( ::technic::info_log(), "NFO" )
+#define SS_WARN ::technic::NullStream( ::technic::warn_log(), "WRN" )
+#define SS_ERROR ::technic::NullStream( ::technic::error_log(), "ERR" )
 #endif
 
 #endif // TECHNIC_LOG_HH

@@ -11,17 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 #ifndef SCREENSPACE_ADDCOMMAND_HH
 #define SCREENSPACE_ADDCOMMAND_HH
 
 #include "ss/Types.hh"
 
+#include <maya/MColor.h>
 #include <maya/MDagModifier.h>
+#include <maya/MObject.h>
+#include <maya/MPoint.h>
 #include <maya/MPxCommand.h>
 #include <maya/MSyntax.h>
-#include <maya/MObject.h>
-#include <maya/MColor.h>
-#include <maya/MPoint.h>
 
 namespace screenspace {
 

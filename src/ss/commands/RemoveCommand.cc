@@ -1,18 +1,17 @@
-#include "ss/commands/RemoveCommand.hh"
-#include "ss/Log.hh"
-#include "ss/Types.hh"
-#include "ss/PickableShape.hh"
 #include "RemoveCommand.hh"
 
+#include "ss/Log.hh"
+#include "ss/PickableShape.hh"
+#include "ss/Types.hh"
 
-#include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
-#include <maya/MDagPath.h>
-#include <maya/MSelectionList.h>
 #include <maya/MDagModifier.h>
+#include <maya/MDagPath.h>
 #include <maya/MDagPathArray.h>
+#include <maya/MGlobal.h>
 #include <maya/MNodeClass.h>
 #include <maya/MObjectArray.h>
+#include <maya/MSelectionList.h>
 
 namespace screenspace {
 

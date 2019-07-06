@@ -27,10 +27,7 @@ public:
   static MStatus initialize();
 
 public:
-  MSelectionMask getShapeSelectionMask() const override
-  {
-    return MSelectionMask::kSelectHandles;
-  }
+  MSelectionMask getShapeSelectionMask() const override;
 
 private:
   static MObject m_camera;

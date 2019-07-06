@@ -1,14 +1,14 @@
 #include "AddCommand.hh"
 
 #include "ss/Log.hh"
-#include "ss/Types.hh"
 #include "ss/PickableShape.hh"
+#include "ss/Types.hh"
 
-#include <maya/MGlobal.h>
 #include <maya/MArgParser.h>
 #include <maya/MDagPath.h>
-#include <maya/MSelectionList.h>
+#include <maya/MGlobal.h>
 #include <maya/MNodeClass.h>
+#include <maya/MSelectionList.h>
 
 namespace screenspace {
 
@@ -16,12 +16,10 @@ using Flags = std::pair<const char*, const char*>;
 
 static Flags kCameraFlags = {"-c", "-camera"};
 static Flags kParentFlags = {"-p", "-parent"};
-
 static Flags kDepthFlags = {"-d", "-depth"};
 static Flags kPositionFlags = {"-p", "-position"};
 static Flags kVerticalAlignFlags = {"-va", "-verticalAlign"};
 static Flags kHorizontalAlignFlags = {"-ha", "-horizontalAlign"};
-
 static Flags kShapeFlags = {"-s", "-shape"};
 static Flags kColorFlags = {"-clr", "-color"};
 static Flags kOpacityFlags = {"-op", "-opacity"};
@@ -57,12 +55,10 @@ MSyntax AddCommand::syntaxCreator() {
   MSyntax syntax;
   syntax.addFlag(kCameraFlags.first, kCameraFlags.second, MSyntax::kString);
   syntax.addFlag(kParentFlags.first, kParentFlags.second, MSyntax::kString);
-
   syntax.addFlag(kDepthFlags.first, kDepthFlags.second, MSyntax::kDouble);
   syntax.addFlag(kPositionFlags.first, kPositionFlags.second, MSyntax::kString);
   syntax.addFlag(kVerticalAlignFlags.first, kVerticalAlignFlags.second, MSyntax::kString);
   syntax.addFlag(kHorizontalAlignFlags.first, kHorizontalAlignFlags.second, MSyntax::kString);
-
   syntax.addFlag(kShapeFlags.first, kShapeFlags.second, MSyntax::kString);
   syntax.addFlag(kColorFlags.first, kColorFlags.second, MSyntax::kDouble, MSyntax::kDouble, MSyntax::kDouble);
   syntax.addFlag(kOpacityFlags.first, kOpacityFlags.second, MSyntax::kDouble);
@@ -90,7 +86,6 @@ MStatus AddCommand::doIt(const MArgList& args)
     MGlobal::displayError("Error attaching pickable! No parent set.");
     return MS::kFailure;
   }
-
 
   MString cameraName;
   MString parentName;

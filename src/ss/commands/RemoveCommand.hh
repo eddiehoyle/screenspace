@@ -15,10 +15,10 @@
 #ifndef SCREENSPACE_REMOVECOMMAND_HH
 #define SCREENSPACE_REMOVECOMMAND_HH
 
-#include <maya/MPxCommand.h>
 #include <maya/MDagModifier.h>
-#include <maya/MSyntax.h>
 #include <maya/MObjectArray.h>
+#include <maya/MPxCommand.h>
+#include <maya/MSyntax.h>
 
 namespace screenspace {
 
