@@ -9,7 +9,7 @@ Pickables can be styled and offset to your taste including color, position, size
 
 Attach to any rig and build custom layouts! (*Azri rig courtesy of: https://www.gameanim.com/*)
 
-![alt text](resources/screenspace3.png "Interfaces")
+![alt text](resources/screenspace3.gif "Interfaces")
 
 # Building
 You'll need [CMake 3.0+](https://cmake.org), git, and Maya to build from source. Run the following commands in a shell.
