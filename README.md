@@ -3,15 +3,13 @@ Screenspace is a Maya plugin that allows pickable shapes to be added to transfor
 
 ![alt text](resources/screenspace1.gif "Pickable")
 
-Pickables can be styled and offset to your taste! Some options include color, position, size, and vertical and horizontal alignment.
+Pickables can be styled and offset to your taste. Options include color, position, size, and vertical and horizontal alignment.
 
 ![alt text](resources/screenspace2.gif "Style")
 
-Pickables can be attached to any rig! Build your own custom interfaces easily.
+Build your own custom interfaces and attach to any rig! <sup>(*Azri rig courtesy of: https://www.gameanim.com/*)</sup>
 
 ![alt text](resources/screenspace3.gif "Interfaces")
-
-<sup>(*Azri rig courtesy of: https://www.gameanim.com/*)</sup>
 
 # Building
 You'll need CMake, git, and Maya to build from source. Run the following commands in a shell.
@@ -43,7 +41,7 @@ plugin/screenspace.bundle # OSX
                   .dll    # Windows
 ```
 
-See ]Maya's plugin installation guide](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Customizing/files/GUID-FA51BD26-86F3-4F41-9486-2C3CF52B9E17-htm.html) for more details. 
+See [Maya's plugin installation guide](https://knowledge.autodesk.com/support/maya/learn-explore/caas/CloudHelp/cloudhelp/2018/ENU/Maya-Customizing/files/GUID-FA51BD26-86F3-4F41-9486-2C3CF52B9E17-htm.html) for more information about these paths. 
 
 # Loading
 
@@ -59,7 +57,7 @@ cmds.addPickable(parent="transform1", camera="perspShape")
 
 The above example features the _minimum_ required arguments to run this command. You'll need a `parent` to attach the pickable to and a `camera` whose viewports to display the pickable on. Fill in these details to fit your needs.
 
-Example Python script to attach a pickable to a selected transform and the perspective camera.
+Here's an example Python script to attach a pickable to a selected transform and the perspective camera.
 
 ```python
 from maya import cmds
