@@ -20,6 +20,7 @@ namespace screenspace {
 enum class Shape {
   Circle,
   Rectangle,
+  Triangle,
 };
 
 enum class Position {

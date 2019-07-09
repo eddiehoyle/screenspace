@@ -331,6 +331,23 @@ void prepareGeometry(const MDagPath& pickablePath,
 
       break;
     }
+    case Shape::Triangle:
+    {
+      geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+      geometry.vertices.append(MPoint(0.0, 0.0, 0.0, 1.0));
+      geometry.vertices.append(MPoint(1.0, 0.0, 0.0, 1.0));
+      geometry.vertices.append(MPoint(0.5, std::sin(1.0), 0.0, 1.0));
+
+      for (std::size_t i = 0; i < 3; ++i) {
+        geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
+        geometry.colors.append(color);
+      }
+
+      for (unsigned int index: {0, 1, 2})
+        geometry.indices.append(index);
+
+      break;
+    }
   }
 
   // Apply transformation
