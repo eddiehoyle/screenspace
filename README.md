@@ -25,6 +25,7 @@ cd build
 cmake ..
 make
 ```
+> Note: You might want to change the target Maya version. That's in `screenspace/CMakeLists.txt`, change the line `set(MAYA_VERSION <Your Target Version>`
 
 Once built, check the `plugin` directory for a bunch of directories and files.
 
