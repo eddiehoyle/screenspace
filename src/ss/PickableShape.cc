@@ -50,6 +50,7 @@ MStatus PickableShape::initialize() {
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(eAttr.addField("Circle", static_cast<short>(Shape::Circle)));
   CHECK_MSTATUS(eAttr.addField("Rectangle", static_cast<short>(Shape::Rectangle)));
+  CHECK_MSTATUS(eAttr.addField("Triangle", static_cast<short>(Shape::Triangle)));
   CHECK_MSTATUS(eAttr.setKeyable(true));
   CHECK_MSTATUS(eAttr.setCached(true));
   CHECK_MSTATUS(eAttr.setStorable(true));

@@ -206,6 +206,8 @@ MStatus AddCommand::doIt(const MArgList& args)
       shape = static_cast<int>(Shape::Circle);
     else if (_shape == "rectangle")
       shape = static_cast<int>(Shape::Rectangle);
+    else if (_shape == "triangle")
+      shape = static_cast<int>(Shape::Triangle);
 
     if (shape == -1)
     {
