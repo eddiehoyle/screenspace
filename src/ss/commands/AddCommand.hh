@@ -17,6 +17,7 @@
 
 #include "ss/Types.hh"
 
+#include <maya/MAngle.h>
 #include <maya/MColor.h>
 #include <maya/MDagModifier.h>
 #include <maya/MObject.h>
@@ -52,6 +53,7 @@ private:
   double m_size;
   double m_width;
   double m_height;
+  MAngle m_rotate;
   MPoint m_offset;
 };
 
