@@ -75,6 +75,7 @@ The `addPickable` command also supports a bunch of extra options.
 ```python
 cmds.addPickable(parent="transform1",     # Attach pickable to this transform 
                  camera="perspShape",     # Display pickable on this camera's viewports
+                 rotate=30.0,             # Rotation in degrees
                  offset=(50.0, 20.0),     # Offset shape position
                  size=20.0,               # Size multiplier
                  width=2.0,               # Width of shape
