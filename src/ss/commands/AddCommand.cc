@@ -26,6 +26,7 @@ static Flags kOpacityFlags = {"-op", "-opacity"};
 static Flags kSizeFlags = {"-sz", "-size"};
 static Flags kWidthFlags = {"-w", "-width"};
 static Flags kHeightFlags = {"-w", "-height"};
+static Flags kRotateFlags = {"-r", "-rotate"};
 static Flags kOffsetFlags = {"-o", "-offset"};
 
 MString AddCommand::typeName = "addPickable";
@@ -65,8 +66,8 @@ MSyntax AddCommand::syntaxCreator() {
   syntax.addFlag(kSizeFlags.first, kSizeFlags.second, MSyntax::kDouble);
   syntax.addFlag(kWidthFlags.first, kWidthFlags.second, MSyntax::kDouble);
   syntax.addFlag(kHeightFlags.first, kHeightFlags.second, MSyntax::kDouble);
+  syntax.addFlag(kRotateFlags.first, kRotateFlags.second, MSyntax::kAngle);
   syntax.addFlag(kOffsetFlags.first, kOffsetFlags.second, MSyntax::kDouble, MSyntax::kDouble);
-
   return syntax;
 }
 
@@ -234,14 +235,21 @@ MStatus AddCommand::doIt(const MArgList& args)
     m_color.a = a;
   }
 
+  if (parser.isFlagSet(kRotateFlags.second))
+  {
+    double rotate;
+    CHECK_MSTATUS(parser.getFlagArgument(kRotateFlags.second, 0, rotate));
+    m_rotate = MAngle(rotate, MAngle::kDegrees);
+  }
+
   if (parser.isFlagSet(kSizeFlags.second))
-  CHECK_MSTATUS(parser.getFlagArgument(kSizeFlags.second, 0, m_size));
+    CHECK_MSTATUS(parser.getFlagArgument(kSizeFlags.second, 0, m_size));
 
   if (parser.isFlagSet(kWidthFlags.second))
-  CHECK_MSTATUS(parser.getFlagArgument(kWidthFlags.second, 0, m_width));
+    CHECK_MSTATUS(parser.getFlagArgument(kWidthFlags.second, 0, m_width));
 
   if (parser.isFlagSet(kHeightFlags.second))
-  CHECK_MSTATUS(parser.getFlagArgument(kWidthFlags.second, 0, m_height));
+    CHECK_MSTATUS(parser.getFlagArgument(kWidthFlags.second, 0, m_height));
 
   if (parser.isFlagSet(kOffsetFlags.second))
   {
@@ -279,6 +287,7 @@ MStatus AddCommand::redoIt() {
   CHECK_MSTATUS(m_dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("size")), float(m_size)));
   CHECK_MSTATUS(m_dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("width")), float(m_width)));
   CHECK_MSTATUS(m_dgm.newPlugValueFloat(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("height")), float(m_height)));
+  CHECK_MSTATUS(m_dgm.newPlugValueMAngle(MPlug(pickableObj, MNodeClass(PickableShape::id).attribute("rotate")), m_rotate));
 
   {
     MFnNumericData numData;

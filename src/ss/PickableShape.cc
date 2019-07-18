@@ -7,6 +7,7 @@
 #include <maya/MFnMessageAttribute.h>
 #include <maya/MFnNumericAttribute.h>
 #include <maya/MFnTypedAttribute.h>
+#include <maya/MFnUnitAttribute.h>
 
 namespace screenspace {
 
@@ -24,6 +25,7 @@ MObject PickableShape::m_depth;
 MObject PickableShape::m_position;
 MObject PickableShape::m_horizontalAlign;
 MObject PickableShape::m_verticalAlign;
+MObject PickableShape::m_rotate;
 MObject PickableShape::m_offsetX;
 MObject PickableShape::m_offsetY;
 MObject PickableShape::m_offset;
@@ -40,6 +42,7 @@ MStatus PickableShape::initialize() {
   MFnNumericAttribute nAttr;
   MFnEnumAttribute eAttr;
   MFnMessageAttribute mAttr;
+  MFnUnitAttribute uAttr;
 
   m_camera = mAttr.create("camera", "cam", &status);
   CHECK_MSTATUS(status);
@@ -134,6 +137,9 @@ MStatus PickableShape::initialize() {
   CHECK_MSTATUS(eAttr.addField("Middle", static_cast<short>(VerticalAlign::Middle)));
   CHECK_MSTATUS(eAttr.addField("Top", static_cast<short>(VerticalAlign::Top)));
 
+  m_rotate = uAttr.create("rotate", "rot", MFnUnitAttribute::kAngle, 0.0, &status);
+  CHECK_MSTATUS(status);
+
   m_offsetX = nAttr.create("offsetX", "ofsx", MFnNumericData::kFloat, 0.0, &status);
   CHECK_MSTATUS(status);
   CHECK_MSTATUS(nAttr.setMin(-1000.0f));
@@ -163,6 +169,7 @@ MStatus PickableShape::initialize() {
   CHECK_MSTATUS(addAttribute(m_position));
   CHECK_MSTATUS(addAttribute(m_horizontalAlign));
   CHECK_MSTATUS(addAttribute(m_verticalAlign));
+  CHECK_MSTATUS(addAttribute(m_rotate));
   CHECK_MSTATUS(addAttribute(m_offset));
 
   return MStatus::kSuccess;

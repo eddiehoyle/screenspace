@@ -2,6 +2,7 @@ global proc AEpickableTemplate(string $nodeName)
 {
   editorTemplate -beginScrollLayout;
   editorTemplate -beginLayout "Geometry" -collapse 0;
+  editorTemplate -addControl "rotate";
   editorTemplate -addControl "offset";
   editorTemplate -addControl -label "Shape" "shape" "swapShape";
   editorTemplate -addControl "size";

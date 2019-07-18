@@ -4,7 +4,9 @@
 #include "ss/PickableShape.hh"
 #include "ss/Types.hh"
 
+#include <maya/MAngle.h>
 #include <maya/MColorArray.h>
+#include <maya/MEulerRotation.h>
 #include <maya/MFnDependencyNode.h>
 #include <maya/MNodeClass.h>
 #include <maya/MPlug.h>
@@ -35,11 +37,13 @@ struct Geometry {
   MVectorArray normals;                 // Per-vertex normal
   MColorArray colors;                   // Per-vertex color
   MUintArray indices;                   // Poly indices
+  MBoundingBox bounds;
 };
 
 /// Style helper
 struct Style {
   Shape shape;   // Draw shape
+  MAngle rotate; // Angle in degrees
   MColor color;  // Shape color
 };
 
@@ -203,14 +207,20 @@ void prepareMatrix(const MDagPath& pickablePath,
       break;
   }
 
+  // Fetch geometry
+  float size, width, height;
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("size")).getValue(size));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("width")).getValue(width));
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("height")).getValue(height));
+
   // Fetch offset
   float viewportOffsetX, viewportOffsetY;
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("offsetX")).getValue(viewportOffsetX));
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("offsetY")).getValue(viewportOffsetY));
   MPoint viewportOffset = computeViewportToWorld(frameContext,
                                                  nearClipPlane,
-                                                 alignOffsetX + viewportOffsetX * viewportUnitX,
-                                                 alignOffsetY + viewportOffsetY * viewportUnitY,
+                                                 (alignOffsetX + viewportOffsetX) * viewportUnitX,
+                                                 (alignOffsetY + viewportOffsetY) * viewportUnitY,
                                                  depth);
 
   // Compute offset
@@ -222,17 +232,22 @@ void prepareMatrix(const MDagPath& pickablePath,
   MPoint origin;
   linePlaneIntersection(ray, rayOrigin, normal, nearBL, origin);
 
-  // Fetch geometry
-  float size, width, height;
-  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("size")).getValue(size));
-  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("width")).getValue(width));
-  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("height")).getValue(height));
+  // Offset rotation
+  MTransformationMatrix xformOffsetRotate;
+  xformOffsetRotate.setToRotationAxis(MVector(0,0,1), data->style().rotate.asRadians());
 
   // Prepare matrices
+  MMatrix pivotMatrix;
   MMatrix screenspaceTranslateMatrix;
   MMatrix screenspaceRotateMatrix;
   MMatrix screenspaceScaleMatrix;
 
+  // Pivot
+  {
+    MTransformationMatrix xform(MMatrix::identity);
+    xform.setTranslation(MPoint(0.5, 0.5, 0.0, 1.0), MSpace::kWorld);
+    pivotMatrix = xform.asMatrix();
+  }
   // Translate
   {
     MTransformationMatrix xform(MMatrix::identity);
@@ -242,17 +257,18 @@ void prepareMatrix(const MDagPath& pickablePath,
 
   // Rotate
   screenspaceRotateMatrix = MTransformationMatrix(cameraPath.inclusiveMatrix()).asRotateMatrix();
+  screenspaceRotateMatrix = xformOffsetRotate.asMatrix() * screenspaceRotateMatrix;
 
   // Scale
   {
     MTransformationMatrix xform(MMatrix::identity);
     const double scale[3] = {size * width * worldspaceUnitX,
                              size * height * worldspaceUnitY, 1.0};
-    xform.setScale(scale, MSpace::kTransform);
+    xform.setScale(scale, MSpace::kWorld);
     screenspaceScaleMatrix = xform.asMatrix();
   }
 
-  MMatrix screenWorldMatrix = screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix;
+  MMatrix screenWorldMatrix = pivotMatrix * screenspaceScaleMatrix * screenspaceRotateMatrix * screenspaceTranslateMatrix;
   data->m_matrix = screenWorldMatrix * pickablePath.inclusiveMatrixInverse();
 }
 
@@ -297,7 +313,7 @@ void prepareGeometry(const MDagPath& pickablePath,
       // Outside
       for (std::size_t i = 0; i <= num; ++i) {
         float angle = increment * i;
-        geometry.vertices.append(MPoint(cosf(angle), sinf(angle), 0.0f, 1.0f));
+        geometry.vertices.append(MPoint(0.5 * cosf(angle), 0.5 * sinf(angle), 0.0f, 1.0f));
         geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
         geometry.colors.append(color);
       }
@@ -307,44 +323,52 @@ void prepareGeometry(const MDagPath& pickablePath,
         geometry.indices.append(0);
         geometry.indices.append(i);
         geometry.indices.append(i + 1);
+        geometry.bounds.expand(geometry.vertices[i]);
       }
       geometry.indices.append(0);
       geometry.indices.append(num);
       geometry.indices.append(1);
+      geometry.bounds.expand(geometry.vertices[num]);
       break;
     }
     case Shape::Rectangle:
     {
       geometry.primitive = MUIDrawManager::Primitive::kTriangles;
-      geometry.vertices.append(MPoint(0.0, 0.0, 0.0, 1.0));
-      geometry.vertices.append(MPoint(1.0, 0.0, 0.0, 1.0));
-      geometry.vertices.append(MPoint(1.0, 1.0, 0.0, 1.0));
-      geometry.vertices.append(MPoint(0.0, 1.0, 0.0, 1.0));
+      geometry.vertices.append(MPoint(-0.5, -0.5, 0.0, 1.0));
+      geometry.vertices.append(MPoint(0.5, -0.5, 0.0, 1.0));
+      geometry.vertices.append(MPoint(0.5, 0.5, 0.0, 1.0));
+      geometry.vertices.append(MPoint(-0.5, 0.5, 0.0, 1.0));
 
       for (std::size_t i = 0; i < 4; ++i) {
         geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
         geometry.colors.append(color);
       }
 
-      for (unsigned int index: {0, 1, 2, 0, 2, 3})
-        geometry.indices.append(index);
+      for (unsigned int i: {0, 1, 2, 0, 2, 3})
+      {
+        geometry.indices.append(i);
+        geometry.bounds.expand(geometry.vertices[i]);
+      }
 
       break;
     }
     case Shape::Triangle:
     {
       geometry.primitive = MUIDrawManager::Primitive::kTriangles;
-      geometry.vertices.append(MPoint(0.0, 0.0, 0.0, 1.0));
-      geometry.vertices.append(MPoint(1.0, 0.0, 0.0, 1.0));
-      geometry.vertices.append(MPoint(0.5, std::sin(1.0), 0.0, 1.0));
+      geometry.vertices.append(MPoint(-0.5, -0.5, 0.0, 1.0));
+      geometry.vertices.append(MPoint(0.5, -0.5, 0.0, 1.0));
+      geometry.vertices.append(MPoint(0.0, std::sin(0.5), 0.0, 1.0));
 
       for (std::size_t i = 0; i < 3; ++i) {
         geometry.normals.append(MVector(0.0f, 0.0f, 1.0f));
         geometry.colors.append(color);
       }
 
-      for (unsigned int index: {0, 1, 2})
-        geometry.indices.append(index);
+      for (unsigned int i: {0, 1, 2})
+      {
+        geometry.indices.append(i);
+        geometry.bounds.expand(geometry.vertices[i]);
+      }
 
       break;
     }
@@ -375,8 +399,12 @@ void prepareStyle(const MDagPath& pickableDag,
   CHECK_MSTATUS(colorData.getData(color.r, color.g, color.b));
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("opacity")).getValue(color.a));
 
+  MAngle rotate;
+  CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("rotate")).getValue(rotate));
+
   Style style;
   style.color = color;
+  style.rotate = rotate;
   data->m_style = style;
 }
 
@@ -422,8 +450,8 @@ MUserData* PickableDrawOverride::prepareForDraw(const MDagPath& pickableDag,
 
   // Prepare
   prepareMatrix(pickableDag, cameraDag, frameContext, data);
-  prepareGeometry(pickableDag, cameraDag, frameContext, data);
   prepareStyle(pickableDag, cameraDag, frameContext, data);
+  prepareGeometry(pickableDag, cameraDag, frameContext, data);
 
   return data;
 }
