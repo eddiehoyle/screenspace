@@ -19,7 +19,7 @@
 
 namespace screenspace {
 
-class PickableDrawOverride : public MPxDrawOverride
+class PickableDrawOverride : public MHWRender::MPxDrawOverride
 {
 public:
   static MString classification;
@@ -33,7 +33,7 @@ public:
   MHWRender::DrawAPI supportedDrawAPIs() const override;
   MUserData* prepareForDraw(const MDagPath& pickableDag,
                             const MDagPath& cameraDag,
-                            const MFrameContext& frameContext,
+                            const MHWRender::MFrameContext& frameContext,
                             MUserData* oldData) override;
   bool hasUIDrawables() const override { return true; }
   void addUIDrawables(const MDagPath& pickableDag,
