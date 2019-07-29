@@ -32,12 +32,12 @@ struct Viewport {
 
 /// Geometry helper
 struct Geometry {
-  MUIDrawManager::Primitive primitive;  // Render primitive
-  MPointArray vertices;                 // Vertices
-  MVectorArray normals;                 // Per-vertex normal
-  MColorArray colors;                   // Per-vertex color
-  MUintArray indices;                   // Poly indices
-  MBoundingBox bounds;
+  MHWRender::MUIDrawManager::Primitive primitive;  // Render primitive
+  MPointArray vertices;                            // Vertices
+  MVectorArray normals;                            // Per-vertex normal
+  MColorArray colors;                              // Per-vertex color
+  MUintArray indices;                              // Poly indices
+  MBoundingBox bounds;                             // Bounding box
 };
 
 /// Style helper
@@ -73,7 +73,7 @@ bool linePlaneIntersection(const MVector& ray, const MVector& origin,
 /// \param y Viewport position in pixels.
 /// \param depth Depth of shape.
 /// \return The point.
-MPoint computeViewportToWorld(const MFrameContext& frameContext,
+MPoint computeViewportToWorld(const MHWRender::MFrameContext& frameContext,
                               float nearClipPlane,
                               int x, int y, int depth)
 {
@@ -112,7 +112,7 @@ public:
 /// \param data Will have it's matrix and viewport data populated.
 void prepareMatrix(const MDagPath& pickablePath,
                    const MDagPath& cameraPath,
-                   const MFrameContext& frameContext,
+                   const MHWRender::MFrameContext& frameContext,
                    PickableUserData* data)
 {
   const MNodeClass pickableCls(PickableShape::id);
@@ -279,7 +279,7 @@ void prepareMatrix(const MDagPath& pickablePath,
 /// \param data Will have it's geometry data populated.
 void prepareGeometry(const MDagPath& pickablePath,
                      const MDagPath& cameraPath,
-                     const MFrameContext& frameContext,
+                     const MHWRender::MFrameContext& frameContext,
                      PickableUserData* data)
 {
   const MNodeClass pickableCls(PickableShape::id);
@@ -300,7 +300,7 @@ void prepareGeometry(const MDagPath& pickablePath,
   {
     case Shape::Circle:
     {
-      geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+      geometry.primitive = MHWRender::MUIDrawManager::Primitive::kTriangles;
 
       const std::size_t num = 16;
       float increment = 2.0 * M_PI / float(num);
@@ -333,7 +333,7 @@ void prepareGeometry(const MDagPath& pickablePath,
     }
     case Shape::Rectangle:
     {
-      geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+      geometry.primitive = MHWRender::MUIDrawManager::Primitive::kTriangles;
       geometry.vertices.append(MPoint(-0.5, -0.5, 0.0, 1.0));
       geometry.vertices.append(MPoint(0.5, -0.5, 0.0, 1.0));
       geometry.vertices.append(MPoint(0.5, 0.5, 0.0, 1.0));
@@ -354,7 +354,7 @@ void prepareGeometry(const MDagPath& pickablePath,
     }
     case Shape::Triangle:
     {
-      geometry.primitive = MUIDrawManager::Primitive::kTriangles;
+      geometry.primitive = MHWRender::MUIDrawManager::Primitive::kTriangles;
       geometry.vertices.append(MPoint(-0.5, -0.5, 0.0, 1.0));
       geometry.vertices.append(MPoint(0.5, -0.5, 0.0, 1.0));
       geometry.vertices.append(MPoint(0.0, std::sin(0.5), 0.0, 1.0));
@@ -388,7 +388,7 @@ void prepareGeometry(const MDagPath& pickablePath,
 /// \param data Will have it's style data populated.
 void prepareStyle(const MDagPath& pickableDag,
                   const MDagPath& cameraDag,
-                  const MFrameContext& context,
+                  const MHWRender::MFrameContext& context,
                   PickableUserData* data)
 {
   const MNodeClass pickableCls(PickableShape::id);
@@ -408,7 +408,7 @@ void prepareStyle(const MDagPath& pickableDag,
   data->m_style = style;
 }
 
-MPxDrawOverride* PickableDrawOverride::creator(const MObject& obj)
+MHWRender::MPxDrawOverride* PickableDrawOverride::creator(const MObject& obj)
 {
   return new PickableDrawOverride(obj);
 }
@@ -438,7 +438,7 @@ MHWRender::DrawAPI PickableDrawOverride::supportedDrawAPIs() const {
 
 MUserData* PickableDrawOverride::prepareForDraw(const MDagPath& pickableDag,
                                               const MDagPath& cameraDag,
-                                              const MFrameContext& frameContext,
+                                              const MHWRender::MFrameContext& frameContext,
                                               MUserData* userData) {
 
   if (!isAttachedCamera(pickableDag, cameraDag))
@@ -471,10 +471,10 @@ void PickableDrawOverride::addUIDrawables(const MDagPath& objPath,
   const Style& style = data->style();
 
   // Draw
-  drawManager.beginDrawable(MUIDrawManager::Selectability::kSelectable);
-  drawManager.setPaintStyle(MUIDrawManager::kFlat);
+  drawManager.beginDrawable(MHWRender::MUIDrawManager::Selectability::kSelectable);
+  drawManager.setPaintStyle(MHWRender::MUIDrawManager::kFlat);
   drawManager.setColor(style.color);
-  drawManager.mesh(MUIDrawManager::Primitive::kTriangles,
+  drawManager.mesh(MHWRender::MUIDrawManager::Primitive::kTriangles,
                    geometry.vertices,
                    &geometry.normals,
                    &geometry.colors,
