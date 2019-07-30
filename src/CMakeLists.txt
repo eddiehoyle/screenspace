@@ -15,7 +15,12 @@ set(SS_SOURCE_FILES
 
 add_library(${SS_LIBRARY} SHARED ${SS_SOURCE_FILES})
 target_include_directories(${SS_LIBRARY} PRIVATE ${OPENGL_INCLUDE_DIRS} ${MAYA_INCLUDE_DIR} .)
-target_compile_definitions(${SS_LIBRARY} PRIVATE SS_LOGGING_ENABLED=1 OSMac_)
+
+set(COMPILE_DEFINITIONS)
+if (APPLE)
+    list(APPEND COMPILE_DEFINITIONS OSMac_)
+endif(APPLE)
+target_compile_definitions(${SS_LIBRARY} PRIVATE ${COMPILE_DEFINITIONS})
 
 target_link_libraries(${SS_LIBRARY} ${MAYA_LIBRARIES})
 MAYA_PLUGIN(${SS_LIBRARY})

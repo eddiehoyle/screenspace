@@ -1,6 +1,6 @@
 #include "Log.hh"
 
-#include <iostream>
+#include "ss/Platform.hh"
 
 namespace technic {
 
