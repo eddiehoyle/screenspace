@@ -15,8 +15,7 @@
 #ifndef SCREENSPACE_LOG_HH
 #define SCREENSPACE_LOG_HH
 
-#include <mutex>
-#include <ostream>
+#include "ss/Platform.hh"
 
 namespace technic {
 

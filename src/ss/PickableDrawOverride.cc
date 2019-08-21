@@ -1,8 +1,9 @@
 #include "PickableDrawOverride.hh"
 
 #include "ss/Log.hh"
-#include "ss/PickableShape.hh"
 #include "ss/Types.hh"
+#include "ss/Platform.hh"
+#include "ss/PickableShape.hh"
 
 #include <maya/MAngle.h>
 #include <maya/MColorArray.h>
@@ -14,8 +15,6 @@
 #include <maya/MPointArray.h>
 #include <maya/MUintArray.h>
 #include <maya/MVectorArray.h>
-
-#include <cmath>
 
 namespace screenspace {
 
@@ -175,7 +174,7 @@ void prepareMatrix(const MDagPath& pickablePath,
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("horizontalAlign")).getValue(_horizontalAlign));
   HorizontalAlign horizontalAlign = static_cast<HorizontalAlign>(_horizontalAlign);
 
-  float _verticalAlign;
+  short _verticalAlign;
   CHECK_MSTATUS(MPlug(pickableObj, pickableCls.attribute("verticalAlign")).getValue(_verticalAlign));
   VerticalAlign verticalAlign = static_cast<VerticalAlign>(_verticalAlign);
 
