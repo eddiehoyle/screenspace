@@ -1,6 +1,10 @@
 # Change Log
 
-## [0.1.1] - 2019-08-20
+## [0.1.2] - 2019-08-21
+
+* M_PI now should work again on Windows
+
+## [0.1.1] - 2019-08-20 (deprecated)
 
 * Added Maya 2017 support
 * Windows builds should now be supported
