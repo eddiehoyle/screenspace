@@ -20,10 +20,14 @@
 #endif
 #include <cmath>
 
+#ifndef M_PI
+// Windows fail-safe
+#define M_PI 3.14159265358979323846264338327950288
+#endif
+
 #include <string>
 #include <iostream>
 #include <ostream>
-
 #include <mutex>
 
 #endif // SCREENSPACE_PLATFORM_HH
