@@ -1,5 +1,9 @@
 # Change Log
 
+## [x.x.x] - TBD
+
+* Fixed missing 'swapShape' procedure in AE template 
+
 ## [0.1.2] - 2019-08-21
 
 * M_PI now should work again on Windows
